@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "MCP Integration": {
+      "source": "anthropics/claude-code",
+      "sourceType": "github",
+      "skillPath": "plugins/plugin-dev/skills/mcp-integration/SKILL.md",
+      "computedHash": "99cfef49810cb80a39762a79dbb6a80d486ea56cfa1a81ed10cae0a5a296b496"
+    },
+    "running-claude-code-via-litellm-copilot": {
+      "source": "xixu-me/skills",
+      "sourceType": "github",
+      "skillPath": "skills/running-claude-code-via-litellm-copilot/SKILL.md",
+      "computedHash": "875aabcfa359c28195974ef40210cbb9b904e4392d2ff46b71a84a37127f553c"
+    },
+    "security-review": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "skillPath": "skills/security-review/SKILL.md",
+      "computedHash": "9814020fb226bff5a25c01f6862be0ca2853187230e25bb092689b8ec3a23759"
+    }
+  }
+}

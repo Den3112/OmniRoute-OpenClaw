@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  omniroute:
+    build:
+      context: ./OmniRoute
+    ports:
+      - "20128:20128"
+    volumes:
+      - /home/creator/.omniroute:/app/data
+    environment:
+      - NODE_ENV=production
+      - STORAGE_ENCRYPTION_KEY=v3_1777561214_f26cbab5
+      - PORT=20128
+      - HOSTNAME=0.0.0.0
+    restart: always
+
+  openclaw:
+    build:
+      context: ./openclaw
+    ports:
+      - "18789:18789"
+    volumes:
+      - /home/creator/.openclaw:/root/.openclaw
+    environment:
+      - OMNIROUTE_URL=http://omniroute:20128/v1
+    restart: always
+    depends_on:
+      - omniroute
