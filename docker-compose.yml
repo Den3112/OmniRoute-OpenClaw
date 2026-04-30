@@ -50,7 +50,7 @@ services:
     volumes:
       - openclaw_data:/home/node/.openclaw
       - /var/run/docker.sock:/var/run/docker.sock
-    command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--auth", "password", "--password", "${OPENCLAW_PASSWORD}", "--bind", "lan"]
+    command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--auth", "token", "--token", "${OPENCLAW_PASSWORD:-admin}", "--bind", "lan"]
     environment:
       - NODE_ENV=production
       - OPENCLAW_GATEWAY_PORT=18789
