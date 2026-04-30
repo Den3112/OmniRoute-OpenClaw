@@ -4,26 +4,60 @@ services:
   omniroute:
     build:
       context: ./OmniRoute
+      target: runner-base
     ports:
       - "20128:20128"
     volumes:
-      - /home/creator/.omniroute:/app/data
+      - omniroute_data:/app/data
     environment:
       - NODE_ENV=production
-      - STORAGE_ENCRYPTION_KEY=v3_1777561214_f26cbab5
+      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-v3_1777561214_f26cbab5}
       - PORT=20128
       - HOSTNAME=0.0.0.0
-    restart: always
+    networks:
+      - ai_network
+    restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.mjs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   openclaw:
     build:
-      context: ./openclaw
+      context: ./OmniRoute
+      target: runner-cli
+    command: ["openclaw", "gateway", "--port", "18789"]
     ports:
       - "18789:18789"
     volumes:
-      - /home/creator/.openclaw:/root/.openclaw
+      - openclaw_data:/root/.openclaw
+      - /var/run/docker.sock:/var/run/docker.sock # Allow OpenClaw to use Docker if needed
     environment:
       - OMNIROUTE_URL=http://omniroute:20128/v1
-    restart: always
     depends_on:
-      - omniroute
+      omniroute:
+        condition: service_healthy
+    networks:
+      - ai_network
+    restart: unless-stopped
+    init: true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  ai_network:
+    driver: bridge
+
+volumes:
+  omniroute_data:
+  openclaw_data:
+
