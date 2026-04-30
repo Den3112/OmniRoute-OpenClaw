@@ -1,40 +1,46 @@
-# OmniRoute-OpenClaw Integrated Environment
+# OmniRoute + OpenClaw (All-in-One Docker)
 
-This repository contains a pre-configured, integrated environment for running **OmniRoute** and **OpenClaw** together using Git Submodules for easy updates.
+Professional, pre-configured environment for running **OmniRoute** (API Aggregator) and **OpenClaw** (Agentic AI Gateway) together.
 
-## Project Structure
+## 🚀 Quick Start (One-Click)
 
-- `OmniRoute/`: [Submodule] A powerful AI model router and aggregator.
-- `openclaw/`: [Submodule] An open-source implementation of the Claude API.
-- `docker-compose.yml`: Configuration for running the entire stack using Docker.
-- `update.sh`: One-click script to update all components to their latest versions.
-- `claude-free.sh`: Utility script for managing the environment.
-
-## Getting Started
-
-1. **Clone the repository with submodules**:
+1. **Clone the repository**:
    ```bash
    git clone --recursive https://github.com/Den3112/OmniRoute-OpenClaw.git
    cd OmniRoute-OpenClaw
    ```
 
-2. **Configure Environment Variables**:
-   Ensure `.env` files exist in `OmniRoute/` and `openclaw/`.
-   *Note: `.env` files are ignored by git for security.*
-
-3. **Run with Docker**:
+2. **Run the installer**:
    ```bash
-   docker-compose up -d --build
+   chmod +x update.sh
+   ./update.sh
    ```
 
-## 🔄 How to Update
+**That's it!** The script will:
+- Initialize all submodules.
+- Generate secure random keys for your deployment.
+- Configure `.env` automatically.
+- Start all services in Docker.
 
-To update both OmniRoute and openclaw to their latest versions and restart the system, simply run:
+## 📍 Services
+
+- **OmniRoute Dashboard**: [http://localhost:20128](http://localhost:20128) (Default login: `admin` / `admin`)
+- **OpenClaw Gateway**: [http://localhost:18789](http://localhost:18789)
+
+## 🔄 Updates
+
+To update both OmniRoute and OpenClaw to their latest versions, just run:
 ```bash
 ./update.sh
 ```
-This script will pull the latest commits from the original repositories, rebuild the Docker images, and restart the containers.
 
-## Security Note
+## 🛠 Features
 
-Sensitive files like `.env` and internal `.git` folders are excluded or managed via submodules to maintain a clean and secure environment.
+- **Automated Security**: Automatic generation of `JWT_SECRET`, `API_KEY_SECRET`, and `STORAGE_ENCRYPTION_KEY`.
+- **Redis Caching**: Built-in Redis for high-performance session and data management.
+- **Log Management**: Automatic log rotation (10MB max per file, 3 files max) to prevent disk bloat.
+- **Health Monitoring**: Robust healthchecks ensure services are only used when ready.
+- **Isolated Network**: Services communicate over a private Docker bridge network.
+
+## 📄 License
+MIT

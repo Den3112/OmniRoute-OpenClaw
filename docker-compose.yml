@@ -5,48 +5,57 @@ services:
     build:
       context: ./OmniRoute
       target: runner-base
+    container_name: omniroute
     ports:
       - "20128:20128"
     volumes:
       - omniroute_data:/app/data
     environment:
       - NODE_ENV=production
-      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY}
-      - REDIS_URL=redis://redis:6379
       - PORT=20128
       - HOSTNAME=0.0.0.0
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY_SECRET=${API_KEY_SECRET}
+      - INITIAL_PASSWORD=${INITIAL_PASSWORD:-admin}
+      - APP_LOG_TO_FILE=true
     networks:
       - ai_network
     restart: unless-stopped
     init: true
-    deploy:
-      resources:
-        limits:
-          memory: 768M # Increased slightly for better stability
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
-      test: ["CMD", "node", "healthcheck.mjs"]
+      test: ["CMD", "curl", "-f", "http://localhost:20128/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   openclaw:
     build:
       context: ./openclaw
       args:
-        - OPENCLAW_INSTALL_DOCKER_CLI=1 # Required for sandbox features
-        - OPENCLAW_INSTALL_BROWSER=0    # Set to 1 if you need browser automation (increases image size)
+        - OPENCLAW_INSTALL_DOCKER_CLI=1
+        - OPENCLAW_INSTALL_BROWSER=0
+    container_name: openclaw
     ports:
       - "18789:18789"
     volumes:
-      - openclaw_data:/home/node/.openclaw # Correct path for the submodule image
+      - openclaw_data:/home/node/.openclaw
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - OMNIROUTE_URL=http://omniroute:20128/v1
-      - OMNIROUTE_API_KEY=${OMNIROUTE_API_KEY:-sk-omniroute-any-key}
       - NODE_ENV=production
+      - OPENCLAW_GATEWAY_PORT=18789
+      - OPENCLAW_GATEWAY_BIND=lan
+      - ANTHROPIC_BASE_URL=http://omniroute:20128/v1
+      - OMNIROUTE_API_KEY=${OMNIROUTE_API_KEY:-sk-omniroute-any-key}
     depends_on:
       omniroute:
         condition: service_healthy
@@ -54,23 +63,36 @@ services:
       - ai_network
     restart: unless-stopped
     init: true
-    deploy:
-      resources:
-        limits:
-          memory: 1G # Increased for agent workloads
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:18789/healthz').then(r => r.ok ? process.exit(0) : process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   redis:
     image: redis:7-alpine
+    container_name: omniroute-redis
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
     networks:
       - ai_network
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   ai_network:
