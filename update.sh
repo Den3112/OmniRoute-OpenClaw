@@ -34,6 +34,7 @@ generate_secret() {
 generate_secret "STORAGE_ENCRYPTION_KEY"
 generate_secret "JWT_SECRET"
 generate_secret "API_KEY_SECRET"
+generate_secret "OPENCLAW_PASSWORD"
 
 # 3. Docker build and run
 echo "🛠 Building and starting containers..."

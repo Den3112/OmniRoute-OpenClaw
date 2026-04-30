@@ -50,10 +50,11 @@ services:
     volumes:
       - openclaw_data:/home/node/.openclaw
       - /var/run/docker.sock:/var/run/docker.sock
+    command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--auth", "password", "--password", "${OPENCLAW_PASSWORD}", "--bind", "lan"]
     environment:
       - NODE_ENV=production
       - OPENCLAW_GATEWAY_PORT=18789
-      - OPENCLAW_GATEWAY_BIND=lan
+      - OPENCLAW_PASSWORD=${OPENCLAW_PASSWORD}
       - ANTHROPIC_BASE_URL=http://omniroute:20128/v1
       - OMNIROUTE_API_KEY=${OMNIROUTE_API_KEY:-sk-omniroute-any-key}
     depends_on:
