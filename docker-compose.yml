@@ -11,7 +11,8 @@ services:
       - omniroute_data:/app/data
     environment:
       - NODE_ENV=production
-      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-v3_1777561214_f26cbab5}
+      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY}
+      - REDIS_URL=redis://redis:6379
       - PORT=20128
       - HOSTNAME=0.0.0.0
     networks:
@@ -21,26 +22,31 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 768M # Increased slightly for better stability
     healthcheck:
       test: ["CMD", "node", "healthcheck.mjs"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 20s
+    depends_on:
+      - redis
 
   openclaw:
     build:
-      context: ./OmniRoute
-      target: runner-cli
-    command: ["openclaw", "gateway", "--port", "18789"]
+      context: ./openclaw
+      args:
+        - OPENCLAW_INSTALL_DOCKER_CLI=1 # Required for sandbox features
+        - OPENCLAW_INSTALL_BROWSER=0    # Set to 1 if you need browser automation (increases image size)
     ports:
       - "18789:18789"
     volumes:
-      - openclaw_data:/root/.openclaw
-      - /var/run/docker.sock:/var/run/docker.sock # Allow OpenClaw to use Docker if needed
+      - openclaw_data:/home/node/.openclaw # Correct path for the submodule image
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - OMNIROUTE_URL=http://omniroute:20128/v1
+      - OMNIROUTE_API_KEY=${OMNIROUTE_API_KEY:-sk-omniroute-any-key}
+      - NODE_ENV=production
     depends_on:
       omniroute:
         condition: service_healthy
@@ -51,7 +57,20 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G # Increased for agent workloads
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
 networks:
   ai_network:
@@ -60,4 +79,4 @@ networks:
 volumes:
   omniroute_data:
   openclaw_data:
-
+  redis_data:
