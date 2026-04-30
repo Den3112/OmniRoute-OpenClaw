@@ -24,8 +24,8 @@ Professional, pre-configured environment for running **OmniRoute** (API Aggregat
 
 ## 📍 Services
 
-- **OmniRoute Dashboard**: [http://localhost:20128](http://localhost:20128) (Default login: `admin` / `admin`)
-- **OpenClaw Gateway**: [http://localhost:18789](http://localhost:18789)
+- **OmniRoute Dashboard**: [http://localhost:20128](http://localhost:20128) (Login: `admin` / Password: `admin`)
+- **OpenClaw Gateway**: [http://localhost:18789](http://localhost:18789) (Password: `admin`)
 
 ## 🔄 Updates
 
