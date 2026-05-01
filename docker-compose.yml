@@ -9,7 +9,7 @@ services:
     ports:
       - "20128:20128"
     volumes:
-      - omniroute_data:/app/data
+      - /home/creator/.omniroute:/app/data
     environment:
       - NODE_ENV=production
       - PORT=20128
@@ -19,6 +19,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - API_KEY_SECRET=${API_KEY_SECRET}
       - INITIAL_PASSWORD=${INITIAL_PASSWORD:-admin}
+      - OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK=${OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK:-false}
+      - OMNIROUTE_HIDE_HEALTHCHECK_LOGS=${OMNIROUTE_HIDE_HEALTHCHECK_LOGS:-false}
       - APP_LOG_TO_FILE=true
     networks:
       - ai_network
@@ -30,7 +32,7 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:20128/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:20128/api/monitoring/health').then(r => r.ok ? process.exit(0) : process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -48,7 +50,7 @@ services:
     ports:
       - "18789:18789"
     volumes:
-      - openclaw_data:/home/node/.openclaw
+      - /home/creator/.openclaw:/home/node/.openclaw
       - /var/run/docker.sock:/var/run/docker.sock
     command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--auth", "token", "--token", "${OPENCLAW_PASSWORD:-admin}", "--bind", "lan"]
     environment:
@@ -100,6 +102,4 @@ networks:
     driver: bridge
 
 volumes:
-  omniroute_data:
-  openclaw_data:
   redis_data:
