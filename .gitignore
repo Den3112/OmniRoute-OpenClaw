@@ -59,3 +59,8 @@ Thumbs.db
 # project specific
 openclaw/node_modules/
 OmniRoute/node_modules/
+
+# Local data and backups
+data/
+backups/
+*.tar.gz
