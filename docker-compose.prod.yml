@@ -1,0 +1,15 @@
+services:
+  omniroute:
+    image: ghcr.io/${GITHUB_OWNER:-den3112}/omniroute:latest
+    build:
+      context: ./OmniRoute
+      target: runner-cli
+    # ... rest of the config will be inherited if we use multiple files
+
+  openclaw:
+    image: ghcr.io/${GITHUB_OWNER:-den3112}/openclaw:latest
+    build:
+      context: ./openclaw
+      args:
+        - OPENCLAW_INSTALL_DOCKER_CLI=1
+        - OPENCLAW_INSTALL_BROWSER=0

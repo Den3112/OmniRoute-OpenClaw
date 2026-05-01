@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   omniroute:
     build:
       context: ./OmniRoute
-      target: runner-base
+      target: runner-cli
     container_name: omniroute
     ports:
       - "20128:20128"
@@ -26,11 +24,20 @@ services:
       - ai_network
     restart: unless-stopped
     init: true
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    stop_grace_period: 30s
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:20128/api/monitoring/health').then(r => r.ok ? process.exit(0) : process.exit(1))"]
       interval: 30s
@@ -55,10 +62,19 @@ services:
     command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--auth", "token", "--token", "${OPENCLAW_PASSWORD:-admin}", "--bind", "lan"]
     environment:
       - NODE_ENV=production
+      - HOME=/home/node
       - OPENCLAW_GATEWAY_PORT=18789
       - OPENCLAW_PASSWORD=${OPENCLAW_PASSWORD}
       - ANTHROPIC_BASE_URL=http://omniroute:20128/v1
       - OMNIROUTE_API_KEY=${OMNIROUTE_API_KEY:-sk-omniroute-any-key}
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
     depends_on:
       omniroute:
         condition: service_healthy
@@ -71,21 +87,27 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    shm_size: '2gb'
+    stop_grace_period: 1m
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:18789/healthz').then(r => r.ok ? process.exit(0) : process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      interval: 45s
+      timeout: 15s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: omniroute-redis
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --save "" --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     networks:
       - ai_network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     logging:
       driver: "json-file"
       options:
