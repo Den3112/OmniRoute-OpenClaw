@@ -1,20 +1,58 @@
+# Git
 .git
+.gitignore
 .gitmodules
+
+# Node
 node_modules
-.env
-data
-backups
-*.tar.gz
-*.log
-dist
+npm-debug.log
+yarn-error.log
+.pnpm-store
+
+# Build artifacts
 .next
+dist
+build
 out
-yarn-error.log*
-.DS_Store
+
+# Cache
+.cache
+.turbo
+.eslintcache
+
+# Logs
+*.log
+logs
+
+# Environment
 .env.local
+.env.*.local
+
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Docs
+docs
 *.md
-update.sh
-manage_creds.sh
-claude-free.sh
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
