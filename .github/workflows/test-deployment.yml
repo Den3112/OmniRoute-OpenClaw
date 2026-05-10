@@ -1,0 +1,54 @@
+name: Test Deployment
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Test Installation Script (Dry Run)
+        run: |
+          chmod +x test-install.sh
+          ./test-install.sh
+
+      - name: Full Deployment Test
+        run: |
+          # Create .env from example
+          cp .env.example .env
+          
+          # Run installer (it will generate secrets)
+          chmod +x update.sh
+          # We use a trick to avoid interactive prompts if any
+          echo "y" | ./update.sh
+          
+      - name: Verify Services
+        run: |
+          echo "Checking container status..."
+          docker ps
+          
+          echo "Checking OmniRoute health..."
+          # Wait a bit for services to initialize
+          sleep 30
+          curl -f http://localhost:20128/api/monitoring/health || (docker logs omniroute && exit 1)
+          
+          echo "Checking OpenClaw health..."
+          curl -f http://localhost:18789/healthz || (docker logs openclaw && exit 1)
+
+      - name: Cleanup
+        if: always()
+        run: |
+          ./cleanup.sh
