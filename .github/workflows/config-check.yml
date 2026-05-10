@@ -1,0 +1,67 @@
+name: Configuration Check
+
+on:
+  pull_request:
+    paths:
+      - 'docker-compose.yml'
+      - '.env.example'
+      - '.dockerignore'
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docker-compose.yml'
+      - '.env.example'
+      - '.dockerignore'
+  workflow_dispatch:
+
+jobs:
+  validate-config:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: |
+          docker-compose config > /dev/null
+          echo "✅ docker-compose.yml is valid"
+
+      - name: Check required files
+        run: |
+          files=(".env.example" ".dockerignore" "docker-compose.yml" "monitor.sh" "rebuild.sh")
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+            echo "✅ Found: $file"
+          done
+
+      - name: Validate scripts are executable
+        run: |
+          scripts=("monitor.sh" "rebuild.sh" "OPTIMIZATIONS.sh")
+          for script in "${scripts[@]}"; do
+            if [ ! -x "$script" ]; then
+              echo "❌ Script not executable: $script"
+              exit 1
+            fi
+            echo "✅ Executable: $script"
+          done
+
+      - name: Check .env.example completeness
+        run: |
+          required_vars=(
+            "STORAGE_ENCRYPTION_KEY"
+            "JWT_SECRET"
+            "API_KEY_SECRET"
+            "OPENCLAW_PASSWORD"
+            "INITIAL_PASSWORD"
+          )
+          for var in "${required_vars[@]}"; do
+            if ! grep -q "^$var=" .env.example && ! grep -q "^# $var=" .env.example; then
+              echo "❌ Missing variable in .env.example: $var"
+              exit 1
+            fi
+            echo "✅ Found: $var"
+          done
