@@ -894,11 +894,484 @@ fi
 
 ## 🎯 СЛЕДУЮЩИЕ ШАГИ
 
-1. **Начать с Фазы 1** (критические исправления)
-2. Протестировать на локальной системе
-3. Закоммитить и запушить
-4. Перейти к Фазе 2 (документация)
-5. Продолжить по плану
+### Текущий статус (2026-05-10 17:45 UTC)
+✅ **Фаза 1 завершена** - Все критические баги исправлены  
+⏳ **Фазы 2-5 ожидают** - Требуется ~12-17 часов работы
+
+### Рекомендуемый порядок выполнения:
+
+#### 1. Фаза 2: Документация (4-5 часов) - ПРИОРИТЕТ ВЫСОКИЙ
+**Почему важно:** Без документации пользователи не смогут установить проект на своих системах.
+
+**Что делать:**
+1. Создать `INSTALL.md` (EN) - 2 часа
+   - Скопировать структуру из плана (раздел 2.1)
+   - Добавить инструкции для каждой платформы
+   - Добавить примеры команд
+   - Добавить troubleshooting секцию
+
+2. Создать `docs/ru/INSTALL.md` (RU) - 1.5 часа
+   - Перевести INSTALL.md на русский
+   - Адаптировать примеры для русскоязычной аудитории
+
+3. Создать `TROUBLESHOOTING.md` - 1 час
+   - Список всех возможных проблем
+   - Решения для каждой проблемы
+   - Примеры команд для диагностики
+
+4. Обновить `README.md` - 0.5 часа
+   - Добавить badges
+   - Добавить ссылки на новую документацию
+   - Обновить системные требования
+
+**Команда для старта:** "Начинай Фазу 2" или "Создай документацию"
+
+---
+
+#### 2. Фаза 3: Тестирование (2-3 часа) - ПРИОРИТЕТ СРЕДНИЙ
+**Почему важно:** Автоматическое тестирование предотвратит регрессии.
+
+**Что делать:**
+1. Создать `.github/workflows/test-deployment.yml` - 1.5 часа
+   - Тестирование на Ubuntu 22.04
+   - Проверка всех компонентов
+   - Запуск при каждом push
+
+2. Создать `test-install.sh` - 1 час
+   - Локальное тестирование установки
+   - Проверка всех функций
+   - Очистка после теста
+
+**Команда для старта:** "Начинай Фазу 3" или "Настрой тестирование"
+
+---
+
+#### 3. Фаза 4: Доработка UX (2-3 часа) - ПРИОРИТЕТ НИЗКИЙ
+**Почему важно:** Улучшит пользовательский опыт.
+
+**Что делать:**
+1. Реализовать интерактивный режим - 1.5 часа
+   - Вопросы о портах
+   - Вопросы о паролях
+   - Выбор режима (dev/prod)
+
+2. Добавить дополнительные режимы - 1 час
+   - --quiet (тихая установка)
+   - --dry-run (только проверка)
+   - Прогресс-бар
+
+**Команда для старта:** "Доработай интерактивный режим"
+
+---
+
+#### 4. Фаза 5: GHCR и uninstall (2-3 часа) - ПРИОРИТЕТ НИЗКИЙ
+**Почему важно:** Ускорит установку и добавит удобство.
+
+**Что делать:**
+1. Настроить публикацию в GHCR - 1.5 часа
+   - Обновить GitHub Actions
+   - Настроить права доступа
+   - Протестировать публикацию
+
+2. Создать uninstall.sh - 1 час
+   - Удаление контейнеров
+   - Удаление данных
+   - Очистка системы
+
+**Команда для старта:** "Настрой GHCR" или "Создай uninstall.sh"
+
+---
+
+### Быстрый старт для продолжения:
+
+**Вариант 1: Продолжить весь план**
+```
+Команда: "Продолжай весь план" или "Делай все по порядку"
+Время: ~12-17 часов
+Результат: Полностью готовый проект
+```
+
+**Вариант 2: Только документация**
+```
+Команда: "Делай только Фазу 2" или "Создай документацию"
+Время: ~4-5 часов
+Результат: Полная документация для пользователей
+```
+
+**Вариант 3: Документация + Тестирование**
+```
+Команда: "Делай Фазы 2 и 3"
+Время: ~6-8 часов
+Результат: Документация + автотесты
+```
+
+---
+
+## 📊 ПРОГРЕСС ВЫПОЛНЕНИЯ
+
+```
+Фаза 1: ████████████████████ 100% ✅ (2.5 часа)
+Фаза 2: ░░░░░░░░░░░░░░░░░░░░   0% ⏳ (4-5 часов)
+Фаза 3: ░░░░░░░░░░░░░░░░░░░░   0% ⏳ (2-3 часа)
+Фаза 4: ████░░░░░░░░░░░░░░░░  20% ⏳ (2-3 часа)
+Фаза 5: ████░░░░░░░░░░░░░░░░  20% ⏳ (2-3 часа)
+
+Общий прогресс: ████░░░░░░░░░░░░░░░░ 15% (2.5/17 часов)
+```
+
+---
+
+## 📝 ДЕТАЛЬНОЕ ОПИСАНИЕ ОСТАВШИХСЯ ЗАДАЧ
+
+### ФАЗА 2: ДОКУМЕНТАЦИЯ (детально)
+
+#### 2.1 INSTALL.md (EN) - 2 часа
+
+**Структура файла:**
+```markdown
+# Installation Guide
+
+## Table of Contents
+- System Requirements
+- Quick Start
+- Platform-Specific Instructions
+  - Ubuntu/Debian
+  - Fedora/RHEL/CentOS
+  - Arch Linux
+  - macOS (Intel + Apple Silicon)
+  - Windows (WSL2)
+- Manual Installation
+- Configuration
+- Verification
+- Next Steps
+- Troubleshooting
+
+## System Requirements
+### Minimum Requirements
+- CPU: 2 cores
+- RAM: 4GB
+- Disk: 10GB free space
+- OS: Linux (kernel 4.x+), macOS 11+, Windows 10/11 (WSL2)
+
+### Recommended Requirements
+- CPU: 4+ cores
+- RAM: 8GB+
+- Disk: 20GB+ free space
+
+### Software Requirements
+- Docker 20.10+ or Docker Desktop
+- Docker Compose 2.0+
+- Git 2.x+
+
+## Quick Start
+[Пошаговые инструкции для быстрой установки]
+
+## Platform-Specific Instructions
+[Детальные инструкции для каждой ОС]
+
+[... остальные разделы ...]
+```
+
+**Что включить:**
+- Точные команды для каждой ОС
+- Скриншоты (опционально)
+- Примеры вывода команд
+- Частые ошибки и их решения
+- Ссылки на официальную документацию Docker/Git
+
+**Время:** ~2 часа
+
+---
+
+#### 2.2 docs/ru/INSTALL.md (RU) - 1.5 часа
+
+**Что делать:**
+- Полный перевод INSTALL.md на русский
+- Адаптация примеров (русские комментарии)
+- Проверка терминологии
+
+**Время:** ~1.5 часа
+
+---
+
+#### 2.3 TROUBLESHOOTING.md - 1 час
+
+**Структура:**
+```markdown
+# Troubleshooting Guide
+
+## Installation Issues
+- Script fails with "command not found"
+- Permission denied errors
+- Submodule initialization fails
+- No space left on device
+
+## Docker Issues
+- Docker daemon not running
+- Docker Compose version too old
+- Port conflicts
+- Container fails to start
+
+## Permission Errors
+- chown fails on macOS
+- Permission denied on data directory
+- Cannot write to .env file
+
+## Port Conflicts
+- Port 20128 already in use
+- Port 18789 already in use
+- How to change ports
+
+## Submodule Issues
+- Git authentication problems
+- Network connectivity issues
+- Corrupted .git directory
+
+## Memory Issues
+- OOM (Out of Memory) errors
+- Container crashes
+- Slow performance
+
+## Network Issues
+- Cannot pull Docker images
+- Cannot clone submodules
+- Timeout errors
+
+## Service-Specific Issues
+- OmniRoute won't start
+- OpenClaw connection refused
+- Redis connection errors
+
+[Для каждой проблемы: симптомы, причина, решение]
+```
+
+**Время:** ~1 час
+
+---
+
+#### 2.4 Обновление README.md - 0.5 часа
+
+**Что добавить:**
+```markdown
+# Badges
+[![Docker Build](https://github.com/Den3112/OmniRoute-OpenClaw/actions/workflows/docker-publish.yml/badge.svg)]
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]
+[![Version](https://img.shields.io/badge/Version-1.3.0-green.svg)]
+
+# System Requirements
+- Docker 20.10+
+- Docker Compose 2.0+
+- 10GB free disk space
+- 4GB RAM minimum
+
+# Supported Platforms
+- ✅ Linux (Ubuntu, Debian, Fedora, Arch)
+- ✅ macOS (Intel and Apple Silicon)
+- ✅ Windows (WSL2)
+
+# Documentation
+- [Installation Guide](INSTALL.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
+- [Architecture](ARCHITECTURE.md)
+- [Contributing](CONTRIBUTING.md)
+
+# Known Issues
+- [List of known issues with workarounds]
+```
+
+**Время:** ~0.5 часа
+
+---
+
+### ФАЗА 3: ТЕСТИРОВАНИЕ (детально)
+
+#### 3.1 GitHub Actions Workflow - 1.5 часа
+
+**Файл:** `.github/workflows/test-deployment.yml`
+
+**Что тестировать:**
+```yaml
+name: Test Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'update.sh'
+      - '**.sh'
+      - 'docker-compose.yml'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Test secret generation
+        run: |
+          # Test all 4 fallback methods
+          
+      - name: Test Docker Compose detection
+        run: |
+          # Test v1 and v2 detection
+          
+      - name: Test platform detection
+        run: |
+          # Test Linux detection
+          
+      - name: Test disk space check
+        run: |
+          # Test disk space calculation
+          
+      - name: Test port check
+        run: |
+          # Test port availability check
+          
+      - name: Test full installation (dry-run)
+        run: |
+          # Run update.sh in test mode
+```
+
+**Время:** ~1.5 часа
+
+---
+
+#### 3.2 Локальный тест-скрипт - 1 час
+
+**Файл:** `test-install.sh`
+
+```bash
+#!/bin/bash
+# Test installation in isolated environment
+
+echo "🧪 Testing installation..."
+
+# Create temp directory
+TEST_DIR=$(mktemp -d)
+cd "$TEST_DIR"
+
+# Clone repo
+git clone --recursive https://github.com/Den3112/OmniRoute-OpenClaw.git
+cd OmniRoute-OpenClaw
+
+# Run installation
+./update.sh
+
+# Verify
+docker compose ps
+curl http://localhost:20128/api/monitoring/health
+curl http://localhost:18789/healthz
+
+# Cleanup
+docker compose down
+cd /
+rm -rf "$TEST_DIR"
+
+echo "✅ Test completed"
+```
+
+**Время:** ~1 час
+
+---
+
+### ФАЗА 4: UX УЛУЧШЕНИЯ (детально)
+
+#### 4.1 Интерактивный режим - 1.5 часа
+
+**Что реализовать:**
+```bash
+if [ "$INTERACTIVE" = true ]; then
+    # Ask about ports
+    read -p "OmniRoute port [20128]: " OMNIROUTE_PORT
+    OMNIROUTE_PORT=${OMNIROUTE_PORT:-20128}
+    
+    # Ask about passwords
+    read -p "Generate random passwords? (Y/n): " GEN_PASS
+    if [[ ! $GEN_PASS =~ ^[Nn]$ ]]; then
+        # Generate
+    else
+        read -sp "Enter OmniRoute password: " OMNI_PASS
+    fi
+    
+    # Ask about mode
+    echo "Select mode:"
+    echo "1) Production (recommended)"
+    echo "2) Development"
+    read -p "Choice [1]: " MODE
+fi
+```
+
+**Время:** ~1.5 часа
+
+---
+
+### ФАЗА 5: GHCR И UNINSTALL (детально)
+
+#### 5.1 Настройка GHCR - 1.5 часа
+
+**Что делать:**
+1. Обновить `.github/workflows/docker-publish.yml`
+2. Настроить права в GitHub (Settings → Actions → General)
+3. Обновить `docker-compose.yml`:
+```yaml
+omniroute:
+  image: ghcr.io/den3112/omniroute:latest
+  # build:
+  #   context: ./OmniRoute
+```
+4. Добавить fallback в update.sh (уже есть)
+5. Протестировать публикацию
+
+**Время:** ~1.5 часа
+
+---
+
+#### 5.2 Создать uninstall.sh - 1 час
+
+```bash
+#!/bin/bash
+# Uninstall OmniRoute-OpenClaw
+
+echo "⚠️  This will remove:"
+echo "  • All containers"
+echo "  • All Docker images"
+echo "  • All data in ./data/"
+echo ""
+read -p "Continue? (y/N): " -r
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    docker compose down -v
+    docker rmi ghcr.io/den3112/omniroute:latest
+    docker rmi ghcr.io/den3112/openclaw:latest
+    
+    read -p "Delete data directory? (y/N): " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf ./data/
+    fi
+    
+    echo "✅ Uninstalled"
+fi
+```
+
+**Время:** ~1 час
+
+---
+
+## 🎯 ИТОГОВАЯ РЕКОМЕНДАЦИЯ
+
+**Для максимальной пользы:**
+1. Начните с **Фазы 2** (документация) - это критично для пользователей
+2. Затем **Фаза 3** (тестирование) - предотвратит регрессии
+3. Фазы 4-5 можно делать по желанию
+
+**Команда для старта:**
+```
+"Начинай Фазу 2" или "Создай всю документацию"
+```
 
 ---
 
