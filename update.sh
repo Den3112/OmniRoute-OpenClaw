@@ -2,6 +2,21 @@
 # OmniRoute-OpenClaw One-Click Installer & Updater
 set -e
 
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
+cleanup() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        echo "❌ Script failed with exit code $exit_code"
+        echo "📋 Cleaning up..."
+        docker-compose down --remove-orphans 2>/dev/null || true
+    fi
+    exit $exit_code
+}
+
+trap cleanup EXIT
+
 echo "🚀 Starting OmniRoute-OpenClaw Setup..."
 
 # 0. Pre-flight checks
@@ -24,6 +39,13 @@ if [ ! -d "$NEW_DATA_DIR" ]; then
         cp -r "$OLD_OPENCLAW" "$NEW_DATA_DIR/openclaw"
     fi
 fi
+
+# 1.1 Fix permissions for Docker (ensure UID 1000 has access to OpenClaw data)
+echo "🔒 Adjusting permissions for data directory..."
+mkdir -p "$NEW_DATA_DIR/openclaw" "$NEW_DATA_DIR/omniroute"
+chown -R 1000:1000 "$NEW_DATA_DIR/openclaw"
+chmod -R 755 "$NEW_DATA_DIR/openclaw"
+
 
 # 2. Submodule Initialization
 if [ ! -f "OmniRoute/package.json" ]; then
@@ -52,7 +74,7 @@ generate_secret() {
         echo "🔐 Generating secure $var_name..."
         local new_val=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | hex)
         if grep -q "^${var_name}=" .env; then
-            sed -i "s|^${var_name}=.*|${var_name}=${new_val}|" .env
+            sed "s|^${var_name}=.*|${var_name}=${new_val}|" .env > .env.tmp && mv .env.tmp .env
         else
             echo "${var_name}=${new_val}" >> .env
         fi
@@ -64,9 +86,19 @@ generate_secret "JWT_SECRET"
 generate_secret "API_KEY_SECRET"
 generate_secret "OPENCLAW_PASSWORD"
 
+# Ensure encryption key version is set
+if ! grep -q "^STORAGE_ENCRYPTION_KEY_VERSION=" .env; then
+    echo "STORAGE_ENCRYPTION_KEY_VERSION=v1" >> .env
+fi
+
+# 4. Fix permissions
+echo "🔐 Setting data directory permissions..."
+mkdir -p "$NEW_DATA_DIR/omniroute" "$NEW_DATA_DIR/openclaw"
+chmod -R 777 "$NEW_DATA_DIR"
+
 # 4. Docker build and run
 echo "🛠 Building and starting containers..."
-docker-compose build --parallel --pull
+docker-compose build --parallel --pull --progress=plain
 docker-compose up -d
 
 # 5. Post-update health check
