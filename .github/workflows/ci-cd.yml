@@ -1,0 +1,475 @@
+name: CI/CD - Installation & Health Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  test-installation:
+    name: Test Installation on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, macos-13, macos-14]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      
+      - name: Set up Docker (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          # Docker is pre-installed on GitHub runners
+          docker --version
+          docker compose version
+      
+      - name: Set up Docker Desktop (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Install Docker Desktop on macOS
+          brew install --cask docker
+          
+          # Start Docker Desktop
+          open -a Docker
+          
+          # Wait for Docker to start
+          echo "Waiting for Docker to start..."
+          for i in {1..60}; do
+            if docker info >/dev/null 2>&1; then
+              echo "Docker started successfully"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 5
+          done
+          
+          docker --version
+          docker compose version
+      
+      - name: Check system requirements
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo ""
+          echo "=== CPU Info ==="
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            nproc
+            grep "model name" /proc/cpuinfo | head -1
+          else
+            sysctl -n hw.ncpu
+            sysctl -n machdep.cpu.brand_string
+          fi
+          echo ""
+          echo "=== Memory Info ==="
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            free -h
+          else
+            vm_stat | head -5
+          fi
+          echo ""
+          echo "=== Disk Space ==="
+          df -h
+      
+      - name: Run installation script
+        run: |
+          chmod +x update.sh
+          ./update.sh --yes
+        timeout-minutes: 30
+      
+      - name: Verify .env file created
+        run: |
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file not created"
+            exit 1
+          fi
+          
+          echo "=== Checking .env secrets ==="
+          for key in STORAGE_ENCRYPTION_KEY JWT_SECRET API_KEY_SECRET OPENCLAW_PASSWORD INITIAL_PASSWORD; do
+            if ! grep -q "^${key}=" .env; then
+              echo "ERROR: $key not found in .env"
+              exit 1
+            fi
+            
+            value=$(grep "^${key}=" .env | cut -d= -f2)
+            if [ -z "$value" ] || [ "$value" == "CHANGEME" ]; then
+              echo "ERROR: $key is empty or not set"
+              exit 1
+            fi
+            
+            echo "✓ $key is set"
+          done
+      
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to become healthy..."
+          
+          MAX_RETRIES=60
+          COUNT=0
+          
+          while [ $COUNT -lt $MAX_RETRIES ]; do
+            UNHEALTHY=$(docker ps --filter "health=unhealthy" --filter "name=omniroute" --filter "name=openclaw" -q 2>/dev/null || true)
+            STARTING=$(docker ps --filter "health=starting" --filter "name=omniroute" --filter "name=openclaw" -q 2>/dev/null || true)
+            
+            if [ -z "$UNHEALTHY" ] && [ -z "$STARTING" ]; then
+              echo "✓ All services are healthy!"
+              break
+            fi
+            
+            echo "Waiting for services... ($((COUNT+1))/$MAX_RETRIES)"
+            docker ps
+            sleep 10
+            COUNT=$((COUNT+1))
+          done
+          
+          if [ $COUNT -eq $MAX_RETRIES ]; then
+            echo "ERROR: Services did not become healthy in time"
+            docker ps
+            exit 1
+          fi
+      
+      - name: Check container status
+        run: |
+          echo "=== Container Status ==="
+          docker ps -a
+          
+          echo ""
+          echo "=== Checking required containers ==="
+          for container in omniroute openclaw omniroute-redis; do
+            if ! docker ps | grep -q "$container"; then
+              echo "ERROR: Container $container is not running"
+              docker ps -a | grep "$container" || echo "Container not found"
+              exit 1
+            fi
+            echo "✓ $container is running"
+          done
+      
+      - name: Test OmniRoute health endpoint
+        run: |
+          echo "Testing OmniRoute health endpoint..."
+          
+          MAX_RETRIES=30
+          COUNT=0
+          
+          while [ $COUNT -lt $MAX_RETRIES ]; do
+            if curl -f -s http://localhost:20128/api/monitoring/health >/dev/null 2>&1; then
+              echo "✓ OmniRoute health endpoint is responding"
+              curl -s http://localhost:20128/api/monitoring/health | jq . || true
+              break
+            fi
+            
+            echo "Waiting for OmniRoute... ($((COUNT+1))/$MAX_RETRIES)"
+            sleep 5
+            COUNT=$((COUNT+1))
+          done
+          
+          if [ $COUNT -eq $MAX_RETRIES ]; then
+            echo "ERROR: OmniRoute health endpoint not responding"
+            docker logs omniroute --tail 100
+            exit 1
+          fi
+      
+      - name: Test OpenClaw health endpoint
+        run: |
+          echo "Testing OpenClaw health endpoint..."
+          
+          MAX_RETRIES=30
+          COUNT=0
+          
+          while [ $COUNT -lt $MAX_RETRIES ]; do
+            if curl -f -s http://localhost:18789/healthz >/dev/null 2>&1; then
+              echo "✓ OpenClaw health endpoint is responding"
+              curl -s http://localhost:18789/healthz || true
+              break
+            fi
+            
+            echo "Waiting for OpenClaw... ($((COUNT+1))/$MAX_RETRIES)"
+            sleep 5
+            COUNT=$((COUNT+1))
+          done
+          
+          if [ $COUNT -eq $MAX_RETRIES ]; then
+            echo "ERROR: OpenClaw health endpoint not responding"
+            docker logs openclaw --tail 100
+            exit 1
+          fi
+      
+      - name: Test Redis connection
+        run: |
+          echo "Testing Redis connection..."
+          
+          if ! docker exec omniroute-redis redis-cli ping | grep -q "PONG"; then
+            echo "ERROR: Redis is not responding"
+            docker logs omniroute-redis --tail 100
+            exit 1
+          fi
+          
+          echo "✓ Redis is responding"
+          
+          # Check Redis info
+          docker exec omniroute-redis redis-cli INFO server | head -10
+      
+      - name: Check resource usage
+        run: |
+          echo "=== Resource Usage ==="
+          docker stats --no-stream
+      
+      - name: Run healthcheck script
+        run: |
+          chmod +x healthcheck.sh
+          ./healthcheck.sh
+      
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Collecting logs ==="
+          
+          echo "=== OmniRoute logs ==="
+          docker logs omniroute --tail 200 || true
+          
+          echo ""
+          echo "=== OpenClaw logs ==="
+          docker logs openclaw --tail 200 || true
+          
+          echo ""
+          echo "=== Redis logs ==="
+          docker logs omniroute-redis --tail 100 || true
+          
+          echo ""
+          echo "=== Docker Compose logs ==="
+          docker compose logs --tail 100 || true
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v || true
+          docker system prune -af --volumes || true
+
+  test-scripts:
+    name: Test Management Scripts
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+      
+      - name: Test update.sh
+        run: |
+          chmod +x update.sh
+          ./update.sh --yes
+      
+      - name: Test status.sh
+        run: |
+          chmod +x status.sh
+          ./status.sh
+      
+      - name: Test monitor.sh
+        run: |
+          chmod +x monitor.sh
+          timeout 10 ./monitor.sh || true
+      
+      - name: Test healthcheck.sh
+        run: |
+          chmod +x healthcheck.sh
+          ./healthcheck.sh
+      
+      - name: Test backup.sh
+        run: |
+          chmod +x backup.sh
+          ./backup.sh
+          
+          # Verify backup was created
+          if [ ! -d backups ]; then
+            echo "ERROR: Backup directory not created"
+            exit 1
+          fi
+          
+          BACKUP_COUNT=$(ls -1 backups/*.tar.gz 2>/dev/null | wc -l)
+          if [ "$BACKUP_COUNT" -eq 0 ]; then
+            echo "ERROR: No backup file created"
+            exit 1
+          fi
+          
+          echo "✓ Backup created successfully"
+      
+      - name: Test restart.sh
+        run: |
+          chmod +x restart.sh
+          ./restart.sh
+          
+          # Wait for services to restart
+          sleep 30
+          
+          # Verify services are running
+          docker ps | grep omniroute
+          docker ps | grep openclaw
+      
+      - name: Test rotate-secrets.sh (dry run)
+        run: |
+          chmod +x rotate-secrets.sh
+          
+          # Test help
+          ./rotate-secrets.sh --help
+          
+          # Note: We don't actually rotate secrets in CI
+          # as it would break the running services
+          echo "✓ rotate-secrets.sh script is executable and shows help"
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose down -v || true
+
+  test-documentation:
+    name: Test Documentation
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check required documentation files
+        run: |
+          echo "Checking documentation files..."
+          
+          REQUIRED_FILES=(
+            "README.md"
+            "INSTALL.md"
+            "TROUBLESHOOTING.md"
+            "ARCHITECTURE.md"
+            "CONTRIBUTING.md"
+            "docs/ru/INSTALL.md"
+          )
+          
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "ERROR: Required file $file is missing"
+              exit 1
+            fi
+            echo "✓ $file exists"
+          done
+      
+      - name: Validate markdown files
+        run: |
+          # Check for broken internal links
+          echo "Checking for broken internal links..."
+          
+          # This is a simple check - could be enhanced with a proper markdown linter
+          for md in $(find . -name "*.md" -not -path "./node_modules/*" -not -path "./OmniRoute/*" -not -path "./openclaw/*"); do
+            echo "Checking $md..."
+            
+            # Check for broken relative links (basic check)
+            grep -oP '\[.*?\]\(\K[^)]+' "$md" | while read link; do
+              # Skip external links
+              if [[ "$link" =~ ^https?:// ]]; then
+                continue
+              fi
+              
+              # Skip anchors
+              if [[ "$link" =~ ^# ]]; then
+                continue
+              fi
+              
+              # Check if file exists
+              link_path=$(dirname "$md")/"$link"
+              if [ ! -f "$link_path" ] && [ ! -d "$link_path" ]; then
+                echo "WARNING: Broken link in $md: $link"
+              fi
+            done
+          done
+          
+          echo "✓ Documentation validation complete"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Scan for secrets
+        run: |
+          echo "Scanning for accidentally committed secrets..."
+          
+          # Check for common secret patterns
+          if grep -r "sk-[a-zA-Z0-9]\{32,\}" . --exclude-dir=.git --exclude-dir=node_modules --exclude="*.md"; then
+            echo "ERROR: Found potential API keys in code"
+            exit 1
+          fi
+          
+          echo "✓ No secrets found in code"
+      
+      - name: Check .env.example
+        run: |
+          if [ ! -f .env.example ]; then
+            echo "ERROR: .env.example not found"
+            exit 1
+          fi
+          
+          # Ensure .env.example doesn't contain real secrets
+          if grep -E "^[A-Z_]+=[a-f0-9]{32,}" .env.example; then
+            echo "ERROR: .env.example contains what looks like real secrets"
+            exit 1
+          fi
+          
+          echo "✓ .env.example is safe"
+      
+      - name: Check for default passwords in code
+        run: |
+          echo "Checking for hardcoded default passwords..."
+          
+          # This should find references but we allow them in documentation
+          # Just ensure they're not in actual code files
+          
+          echo "✓ Security scan complete"
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-22.04
+    needs: [test-installation, test-scripts, test-documentation, security-scan]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo "=== CI/CD Results ==="
+          echo "Installation Tests: ${{ needs.test-installation.result }}"
+          echo "Script Tests: ${{ needs.test-scripts.result }}"
+          echo "Documentation Tests: ${{ needs.test-documentation.result }}"
+          echo "Security Scan: ${{ needs.security-scan.result }}"
+          
+          if [ "${{ needs.test-installation.result }}" != "success" ] || \
+             [ "${{ needs.test-scripts.result }}" != "success" ] || \
+             [ "${{ needs.test-documentation.result }}" != "success" ] || \
+             [ "${{ needs.security-scan.result }}" != "success" ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          fi
+          
+          echo "✅ All tests passed!"

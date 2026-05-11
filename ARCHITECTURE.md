@@ -1,124 +1,124 @@
-# Архитектура OmniRoute-OpenClaw
+# OmniRoute-OpenClaw Architecture
 
-В этом документе подробно описано техническое устройство проекта и взаимодействие его компонентов.
+This document provides a detailed description of the project's technical structure and component interactions.
 
-## Обзор системы
+## System Overview
 
-Проект представляет собой оркестрацию контейнеров, обеспечивающую полный цикл работы с AI моделями: от управления ключами до предоставления высокоуровневого API шлюза.
+The project is a container orchestration that provides a complete workflow for AI models: from key management to providing a high-level API gateway.
 
-### Основные компоненты
+### Main Components
 
 1.  **OmniRoute (Core/Dashboard)**:
-    - Построен на Node.js (Next.js).
-    - Управляет базой данных провайдеров и ключей.
-    - Обеспечивает веб-интерфейс для администрирования.
-    - Реализует логику квотирования, биллинга и распределения нагрузки.
+    - Built on Node.js (Next.js).
+    - Manages the database of providers and keys.
+    - Provides a web interface for administration.
+    - Implements quota logic, billing, and load balancing.
 
 2.  **OpenClaw (Gateway)**:
-    - Легковесный и быстрый шлюз на Go/Node.js.
-    - Оптимизирован для потоковых запросов (SSE).
-    - Добавляет слой абстракции для "агентных" функций.
+    - Lightweight and fast gateway on Go/Node.js.
+    - Optimized for streaming requests (SSE).
+    - Adds an abstraction layer for "agentic" functions.
 
 3.  **Redis**:
-    - Используется для кэширования ответов LLM.
-    - Хранит сессии пользователей OmniRoute.
-    - Обеспечивает высокую скорость работы за счет минимизации обращений к диску.
+    - Used for caching LLM responses.
+    - Stores OmniRoute user sessions.
+    - Ensures high performance by minimizing disk access.
 
 4.  **Docker Network**:
-    - Все сервисы объединены в сеть `omniroute_net`.
-    - Прямой доступ извне открыт только к Dashboard (:20128) и Gateway (:18789).
+    - All services are combined in the `omniroute_net` network.
+    - Direct external access is only open to Dashboard (:20128) and Gateway (:18789).
 
-## Поток данных
+## Data Flow
 
-Когда пользователь делает запрос через API:
+When a user makes a request through the API:
 
-1.  Запрос поступает на **OpenClaw Gateway**.
-2.  OpenClaw проверяет авторизацию и перенаправляет запрос на **OmniRoute Core** через внутреннюю сеть.
-3.  OmniRoute проверяет наличие кэша в **Redis**.
-4.  Если кэша нет, OmniRoute выбирает подходящего провайдера (OpenAI/Anthropic/...) и делает внешний запрос.
-5.  Ответ сохраняется в Redis и возвращается пользователю через цепочку сервисов.
+1.  The request arrives at **OpenClaw Gateway**.
+2.  OpenClaw checks authorization and forwards the request to **OmniRoute Core** through the internal network.
+3.  OmniRoute checks for cache in **Redis**.
+4.  If there is no cache, OmniRoute selects an appropriate provider (OpenAI/Anthropic/...) and makes an external request.
+5.  The response is saved in Redis and returned to the user through the service chain.
 
-## Структура директорий
+## Directory Structure
 
-- `/OmniRoute`: Исходный код агрегатора (Git Submodule).
-- `/openclaw`: Исходный код шлюза (Git Submodule).
-- `/data`: Персистентные данные (базы данных, конфиги).
-- `/docs`: Изображения и дополнительные материалы документации.
-- `update.sh`: Основной скрипт управления жизненным циклом.
+- `/OmniRoute`: Aggregator source code (Git Submodule).
+- `/openclaw`: Gateway source code (Git Submodule).
+- `/data`: Persistent data (databases, configs).
+- `/docs`: Images and additional documentation materials.
+- `update.sh`: Main lifecycle management script.
 
-## Memory Management и Skills System
+## Memory Management and Skills System
 
-### Memory Management (Управление памятью)
+### Memory Management
 
-**Статус**: ✅ Настроено и работает
+**Status**: ✅ Configured and working
 
-OmniRoute включает систему персистентной памяти для AI-агентов:
+OmniRoute includes a persistent memory system for AI agents:
 
-- **Хранилище**: SQLite таблица `memories` с FTS5 индексом для полнотекстового поиска
-- **Типы памяти**: factual, episodic, procedural, semantic
-- **Стратегии поиска**: exact (хронологический), semantic (FTS5), hybrid (комбинированный)
-- **Автоматическое извлечение**: Факты извлекаются из ответов LLM автоматически
-- **Инъекция**: Память внедряется в системные сообщения перед отправкой к провайдеру
-- **Конфигурация**: 2000 токенов, 30 дней хранения, hybrid стратегия
+- **Storage**: SQLite `memories` table with FTS5 index for full-text search
+- **Memory types**: factual, episodic, procedural, semantic
+- **Search strategies**: exact (chronological), semantic (FTS5), hybrid (combined)
+- **Automatic extraction**: Facts are extracted from LLM responses automatically
+- **Injection**: Memory is injected into system messages before sending to provider
+- **Configuration**: 2000 tokens, 30 days retention, hybrid strategy
 
-**Файлы**:
-- `OmniRoute/src/lib/memory/` - Основная реализация
-- `OmniRoute/src/lib/db/migrations/015_create_memories.sql` - Схема БД
-- `OmniRoute/src/lib/db/migrations/022_add_memory_fts5.sql` - FTS5 индекс
+**Files**:
+- `OmniRoute/src/lib/memory/` - Main implementation
+- `OmniRoute/src/lib/db/migrations/015_create_memories.sql` - DB schema
+- `OmniRoute/src/lib/db/migrations/022_add_memory_fts5.sql` - FTS5 index
 
-### Skills System (Система навыков)
+### Skills System
 
-**Статус**: ✅ Настроено и работает
+**Status**: ✅ Configured and working
 
-Расширяемая система навыков для AI-агентов:
+Extensible skills system for AI agents:
 
-- **Встроенные навыки**: file_read, file_write, http_request, web_search, eval_code, execute_command
-- **Источники**: SkillsMP (маркетплейс), Skills.sh (публичный каталог), Local (пользовательские)
-- **Режимы**: on (всегда), off (отключен), auto (автоматический выбор на основе контекста)
-- **Sandbox**: Docker-изоляция с лимитами ресурсов (256MB RAM, 10s timeout)
-- **Установлено**: 5 навыков (web-search, file-reader, sql-assistant, devops-helper, docs-assistant)
+- **Built-in skills**: file_read, file_write, http_request, web_search, eval_code, execute_command
+- **Sources**: SkillsMP (marketplace), Skills.sh (public catalog), Local (custom)
+- **Modes**: on (always), off (disabled), auto (automatic selection based on context)
+- **Sandbox**: Docker isolation with resource limits (256MB RAM, 10s timeout)
+- **Installed**: 5 skills (web-search, file-reader, sql-assistant, devops-helper, docs-assistant)
 
-**Файлы**:
-- `OmniRoute/src/lib/skills/` - Основная реализация
-- `OmniRoute/src/lib/db/migrations/016_create_skills.sql` - Схема БД
-- `OmniRoute/src/lib/db/migrations/027_skill_mode_and_metadata.sql` - Метаданные
+**Files**:
+- `OmniRoute/src/lib/skills/` - Main implementation
+- `OmniRoute/src/lib/db/migrations/016_create_skills.sql` - DB schema
+- `OmniRoute/src/lib/db/migrations/027_skill_mode_and_metadata.sql` - Metadata
 
 ### MCP Server Integration
 
-**Статус**: ✅ Настроено и работает
+**Status**: ✅ Configured and working
 
-Model Context Protocol сервер с 37 инструментами, включая:
+Model Context Protocol server with 37 tools, including:
 
-**Memory инструменты** (3):
-- `omniroute_memory_search` - Поиск воспоминаний
-- `omniroute_memory_add` - Добавить воспоминание
-- `omniroute_memory_clear` - Очистить память
+**Memory tools** (3):
+- `omniroute_memory_search` - Search memories
+- `omniroute_memory_add` - Add memory
+- `omniroute_memory_clear` - Clear memory
 
-**Skills инструменты** (4):
-- `omniroute_skills_list` - Список навыков
-- `omniroute_skills_enable` - Включить/выключить навык
-- `omniroute_skills_execute` - Выполнить навык
-- `omniroute_skills_executions` - История выполнения
+**Skills tools** (4):
+- `omniroute_skills_list` - List skills
+- `omniroute_skills_enable` - Enable/disable skill
+- `omniroute_skills_execute` - Execute skill
+- `omniroute_skills_executions` - Execution history
 
-**Транспорты**: stdio, SSE, HTTP
+**Transports**: stdio, SSE, HTTP
 
-**Файлы**:
-- `OmniRoute/open-sse/mcp-server/` - MCP сервер
-- `OmniRoute/open-sse/mcp-server/tools/memoryTools.ts` - Memory инструменты
-- `OmniRoute/open-sse/mcp-server/tools/skillTools.ts` - Skills инструменты
+**Files**:
+- `OmniRoute/open-sse/mcp-server/` - MCP server
+- `OmniRoute/open-sse/mcp-server/tools/memoryTools.ts` - Memory tools
+- `OmniRoute/open-sse/mcp-server/tools/skillTools.ts` - Skills tools
 
-### Документация Memory & Skills
+### Memory & Skills Documentation
 
-- **README_MEMORY_SKILLS.md** - Главная страница с результатами настройки
-- **MEMORY_SKILLS_CONFIG.md** - Полная техническая документация (500+ строк)
-- **QUICKSTART_MEMORY_SKILLS.md** - Быстрый старт с примерами (400+ строк)
-- **MEMORY_SKILLS_SUMMARY.md** - Детальная сводка проекта (600+ строк)
-- **test_memory_skills.sh** - Автоматическое тестирование
+- **README_MEMORY_SKILLS.md** - Main page with setup results
+- **MEMORY_SKILLS_CONFIG.md** - Complete technical documentation (500+ lines)
+- **QUICKSTART_MEMORY_SKILLS.md** - Quick start with examples (400+ lines)
+- **MEMORY_SKILLS_SUMMARY.md** - Detailed project summary (600+ lines)
+- **test_memory_skills.sh** - Automated testing
 
-## Безопасность
+## Security
 
-- **Секреты**: Все чувствительные ключи генерируются автоматически с использованием `/dev/urandom` или OpenSSL при первом запуске.
-- **Изоляция**: Контейнеры работают с минимально необходимыми правами.
-- **Логи**: Настроена автоматическая ротация логов Docker для предотвращения атак типа "отказ в обслуживании" через переполнение диска.
-- **Skills Sandbox**: Навыки выполняются в изолированных Docker контейнерах с лимитами ресурсов.
-- **Memory Isolation**: Воспоминания изолированы по API ключам, каждый клиент видит только свои данные.
+- **Secrets**: All sensitive keys are automatically generated using `/dev/urandom` or OpenSSL on first run.
+- **Isolation**: Containers run with minimal necessary privileges.
+- **Logs**: Docker log rotation is configured to prevent "denial of service" attacks through disk overflow.
+- **Skills Sandbox**: Skills are executed in isolated Docker containers with resource limits.
+- **Memory Isolation**: Memories are isolated by API keys, each client sees only their own data.

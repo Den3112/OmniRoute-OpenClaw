@@ -1,14 +1,13 @@
+# docker-compose.fast.yml
+# Fast deployment using pre-built Docker images from GitHub Container Registry
+# Usage: docker compose -f docker-compose.fast.yml up -d
+# 
+# This configuration pulls ready-to-use images instead of building locally,
+# reducing deployment time from ~15-20 minutes to ~3-5 minutes.
+
 services:
   omniroute:
     image: ghcr.io/${DOCKER_ORG:-den3112}/omniroute:latest
-    build:
-      context: ./OmniRoute
-      target: runner-cli
-      cache_from:
-        - type=local,src=/tmp/docker-cache/omniroute
-        - type=registry,ref=ghcr.io/${DOCKER_ORG:-den3112}/omniroute:latest
-      cache_to:
-        - type=local,dest=/tmp/docker-cache/omniroute,mode=max
     container_name: omniroute
     ports:
       - "${PORT:-20128}:20128"
@@ -33,7 +32,7 @@ services:
       - UV_THREADPOOL_SIZE=16
     networks:
       - ai_network
-    restart: always
+    restart: unless-stopped
     init: true
     deploy:
       resources:
@@ -61,16 +60,6 @@ services:
 
   openclaw:
     image: ghcr.io/${DOCKER_ORG:-den3112}/openclaw:latest
-    build:
-      context: ./openclaw
-      args:
-        - OPENCLAW_INSTALL_DOCKER_CLI=1
-        - OPENCLAW_INSTALL_BROWSER=0
-      cache_from:
-        - type=local,src=/tmp/docker-cache/openclaw
-        - type=registry,ref=ghcr.io/${DOCKER_ORG:-den3112}/openclaw:latest
-      cache_to:
-        - type=local,dest=/tmp/docker-cache/openclaw,mode=max
     container_name: openclaw
     ports:
       - "${OPENCLAW_PORT:-18789}:18789"
@@ -102,7 +91,7 @@ services:
         condition: service_healthy
     networks:
       - ai_network
-    restart: always
+    restart: unless-stopped
     init: true
     logging:
       driver: "json-file"
@@ -120,18 +109,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: omniroute-redis
-    # Redis persistence: AOF with fsync every second (balance between performance and durability)
-    # Stores: OmniRoute sessions, rate limits, semantic cache
     command: redis-server --save "" --appendonly yes --appendfsync everysec --maxmemory 512mb --maxmemory-policy allkeys-lru --tcp-keepalive 300 --timeout 0 --tcp-backlog 511 --io-threads 4 --io-threads-do-reads yes --lazyfree-lazy-eviction yes --lazyfree-lazy-expire yes
     volumes:
       - redis_data:/data
     networks:
       - ai_network
-    restart: always
+    restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 640M  # 512M data + 128M overhead
+          memory: 640M
           cpus: '1.0'
         reservations:
           cpus: '0.25'
@@ -154,5 +141,3 @@ networks:
 
 volumes:
   redis_data:
-  npm_cache:
-  pnpm_cache:

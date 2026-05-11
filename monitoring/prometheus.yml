@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'omniroute-openclaw'
+    environment: 'production'
+
+scrape_configs:
+  # OmniRoute metrics
+  - job_name: 'omniroute'
+    static_configs:
+      - targets: ['omniroute:20128']
+    metrics_path: '/api/monitoring/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Redis metrics via redis-exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 10s
+
+  # Docker container metrics (if available)
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['host.docker.internal:9323']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

@@ -471,6 +471,22 @@ generate_random_hex() {
     return 1
 }
 
+# Function to generate secure password (alphanumeric, 16 chars)
+generate_password() {
+    local length="${1:-16}"
+    
+    # Try openssl first (generates base64, clean it up)
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -base64 "$((length * 3 / 4))" 2>/dev/null | tr -d '\n/+=' | head -c "$length" && return 0
+    fi
+    
+    # Fallback to hex
+    generate_random_hex | head -c "$length" && return 0
+    
+    echo "ERROR: Failed to generate password" >&2
+    return 1
+}
+
 # Function to generate secret if empty or missing
 generate_secret() {
     local var_name=$1
@@ -516,7 +532,48 @@ fi
 generate_secret "STORAGE_ENCRYPTION_KEY"
 generate_secret "JWT_SECRET"
 generate_secret "API_KEY_SECRET"
-generate_secret "OPENCLAW_PASSWORD"
+
+# Generate secure passwords (not hex keys)
+generate_password_secret() {
+    local var_name=$1
+    local current_val=$(grep "^${var_name}=" .env 2>/dev/null | cut -d'=' -f2 || true)
+    
+    # Replace default "admin" password with secure random password
+    if [ -z "$current_val" ] || [ "$current_val" == "admin" ] || [ "$current_val" == "CHANGEME" ]; then
+        local new_val=""
+        
+        if [ "$INTERACTIVE" = true ]; then
+            read -sp "   Enter password for $var_name (leave empty to generate random): " user_val
+            echo ""
+            new_val=$user_val
+        fi
+        
+        if [ -z "$new_val" ]; then
+            print_info "Generating secure password for $var_name..."
+            new_val=$(generate_password 16)
+            if [ -z "$new_val" ]; then
+                print_error "Failed to generate password for $var_name"
+                exit 1
+            fi
+        fi
+        
+        if grep -q "^${var_name}=" .env 2>/dev/null; then
+            sed "s|^${var_name}=.*|${var_name}=${new_val}|" .env > .env.tmp && mv .env.tmp .env
+        else
+            echo "${var_name}=${new_val}" >> .env
+        fi
+        
+        # Store password for display later
+        if [ "$var_name" == "INITIAL_PASSWORD" ]; then
+            GENERATED_ADMIN_PASSWORD="$new_val"
+        elif [ "$var_name" == "OPENCLAW_PASSWORD" ]; then
+            GENERATED_OPENCLAW_PASSWORD="$new_val"
+        fi
+    fi
+}
+
+generate_password_secret "OPENCLAW_PASSWORD"
+generate_password_secret "INITIAL_PASSWORD"
 
 # Ensure encryption key version is set
 if ! grep -q "^STORAGE_ENCRYPTION_KEY_VERSION=" .env 2>/dev/null; then
@@ -615,15 +672,39 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 print_success "Installation completed in ${MINUTES}m ${SECONDS}s"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
+echo "🔐 IMPORTANT: Save these credentials securely!"
+echo ""
 echo "📍 OmniRoute Dashboard: http://localhost:20128"
-echo "   Default login: admin / admin"
-echo "   ⚠️  Change password after first login!"
+if [ -n "${GENERATED_ADMIN_PASSWORD:-}" ]; then
+    echo "   Username: admin"
+    echo "   Password: $GENERATED_ADMIN_PASSWORD"
+    print_warning "   ⚠️  This password was randomly generated. Save it now!"
+else
+    CURRENT_PASSWORD=$(grep "^INITIAL_PASSWORD=" .env 2>/dev/null | cut -d'=' -f2 || echo "admin")
+    echo "   Username: admin"
+    echo "   Password: $CURRENT_PASSWORD"
+    if [ "$CURRENT_PASSWORD" == "admin" ]; then
+        print_warning "   ⚠️  Using default password 'admin'. Change it immediately!"
+    fi
+fi
 echo ""
 echo "📍 OpenClaw Gateway: http://localhost:18789"
-echo "   Token: Check OPENCLAW_PASSWORD in .env"
+if [ -n "${GENERATED_OPENCLAW_PASSWORD:-}" ]; then
+    echo "   Token: $GENERATED_OPENCLAW_PASSWORD"
+    print_warning "   ⚠️  This token was randomly generated. Save it now!"
+else
+    CURRENT_TOKEN=$(grep "^OPENCLAW_PASSWORD=" .env 2>/dev/null | cut -d'=' -f2 || echo "admin")
+    echo "   Token: $CURRENT_TOKEN"
+    if [ "$CURRENT_TOKEN" == "admin" ]; then
+        print_warning "   ⚠️  Using default token 'admin'. Change it immediately!"
+    fi
+fi
 echo ""
 echo "📊 Monitor status: ./monitor.sh"
 echo "🔄 Quick restart: ./restart.sh"
 echo "📋 View logs: ./logs.sh"
+echo "🔐 Rotate secrets: ./rotate-secrets.sh"
 echo ""
 print_success "ALL SYSTEMS GO!"
+echo ""
+print_info "💡 Tip: Run './rotate-secrets.sh' to change passwords anytime"

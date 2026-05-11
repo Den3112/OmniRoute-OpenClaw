@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   omniroute:
     image: ghcr.io/${DOCKER_ORG:-den3112}/omniroute:latest
@@ -31,6 +33,7 @@ services:
       - SEMANTIC_CACHE_DEFAULT_TEMPERATURE=${SEMANTIC_CACHE_DEFAULT_TEMPERATURE:-true}
       - NODE_OPTIONS=--max-old-space-size=1536 --max-semi-space-size=64
       - UV_THREADPOOL_SIZE=16
+      - ENABLE_METRICS=${ENABLE_METRICS:-true}
     networks:
       - ai_network
     restart: always
@@ -120,8 +123,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: omniroute-redis
-    # Redis persistence: AOF with fsync every second (balance between performance and durability)
-    # Stores: OmniRoute sessions, rate limits, semantic cache
     command: redis-server --save "" --appendonly yes --appendfsync everysec --maxmemory 512mb --maxmemory-policy allkeys-lru --tcp-keepalive 300 --timeout 0 --tcp-backlog 511 --io-threads 4 --io-threads-do-reads yes --lazyfree-lazy-eviction yes --lazyfree-lazy-expire yes
     volumes:
       - redis_data:/data
@@ -131,7 +132,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 640M  # 512M data + 128M overhead
+          memory: 640M
           cpus: '1.0'
         reservations:
           cpus: '0.25'
@@ -148,6 +149,97 @@ services:
       retries: 10
       start_period: 30s
 
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: omniroute-prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - ai_network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    profiles:
+      - monitoring
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: omniroute-grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=redis-datasource
+    networks:
+      - ai_network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # Redis Exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: omniroute-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    networks:
+      - ai_network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    depends_on:
+      - redis
+    profiles:
+      - monitoring
+
 networks:
   ai_network:
     driver: bridge
@@ -156,3 +248,5 @@ volumes:
   redis_data:
   npm_cache:
   pnpm_cache:
+  prometheus_data:
+  grafana_data:

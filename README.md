@@ -9,30 +9,43 @@
 [![Version](https://img.shields.io/badge/Version-1.2.0-green.svg)](https://github.com/Den3112/OmniRoute-OpenClaw)
 [![Status](https://img.shields.io/badge/Status-Stable-brightgreen.svg)]()
 
-**Профессиональная среда для запуска OmniRoute и OpenClaw в едином Docker-контейнере.**
-*Агрегатор API + Agentic AI Gateway — всё, что нужно для работы с LLM в одном месте.*
+**Professional environment for running OmniRoute and OpenClaw in a unified Docker container.**
+*API Aggregator + Agentic AI Gateway — everything you need to work with LLMs in one place.*
 
-[Быстрый старт](#-быстрый-старт) • [Особенности](#-особенности) • [Архитектура](#-архитектура) • [Сервисы](#-сервисы) • [Документация](#-документация)
+[Quick Start](#-quick-start) • [Features](#-features) • [Architecture](#-architecture) • [Services](#-services) • [Documentation](#-documentation)
 
 </div>
 
 ---
 
 ## 📖 Documentation
-- [📥 **Installation Guide** (EN)](INSTALL.md)
-- [🇷🇺 **Руководство по установке** (RU)](docs/ru/INSTALL.md)
+- [📥 **Installation Guide**](INSTALL.md)
 - [🛠 **Troubleshooting**](TROUBLESHOOTING.md)
 - [🏗 **Architecture**](ARCHITECTURE.md)
 
 ---
 
 ## ✨ Features
+
+### Core Features
 - **Unified API Gateway**: Single endpoint for all your AI models (Anthropic, OpenAI, Gemini, etc.).
 - **Advanced Load Balancing**: Intelligent routing between multiple providers.
 - **Token & Key Management**: Securely manage and rotate your API keys.
 - **Real-time Monitoring**: Integrated health checks and performance tracking.
 - **Easy Deployment**: Docker-based setup with a one-click installer.
 - **Privacy First**: All configurations and logs stay on your server.
+
+### Security Features (NEW! 🔐)
+- **Automatic Password Generation**: Unique passwords generated on installation
+- **Secret Rotation**: Built-in tool for rotating all security credentials
+- **Pre-commit Hooks**: Automatic checks to prevent committing secrets
+- **CI/CD Testing**: Automated testing on multiple platforms
+
+### Developer Experience (NEW! 🛠️)
+- **Comprehensive Documentation**: Installation guides in English and Russian
+- **Troubleshooting Guide**: Solutions for common issues
+- **Local Testing**: Test installation before deploying
+- **Management Scripts**: Easy-to-use scripts for all operations
 
 ---
 
@@ -46,7 +59,7 @@
 
 ---
 
-## 🚀 Quick Start / Быстрый старт
+## 🚀 Quick Start
 
 ### ⚡ One-Command Installation (Recommended)
 
@@ -63,18 +76,18 @@ curl -fsSL https://raw.githubusercontent.com/Den3112/OmniRoute-OpenClaw/main/ins
 ### 📦 Manual Installation
 
 ```bash
-# 1. Clone with submodules / Клонируйте с подмодулями
+# 1. Clone with submodules
 git clone --recursive https://github.com/Den3112/OmniRoute-OpenClaw.git
 cd OmniRoute-OpenClaw
 
-# 2. Run automatic installer / Запустите автоматическую установку
+# 2. Run automatic installer
 ./update.sh --yes
 
-# Or interactive mode / Или интерактивный режим
+# Or interactive mode
 ./update.sh
 ```
 
-**What the script does / Что делает скрипт:**
+**What the script does:**
 - Initializes and updates all submodules
 - Creates `.env` from example and generates secure keys
 - Configures permissions and starts Docker containers
@@ -83,13 +96,13 @@ cd OmniRoute-OpenClaw
 
 ---
 
-## 🏗 Архитектура
+## 🏗 Architecture
 
-Проект использует микросервисную архитектуру, изолированную внутри приватной сети Docker.
+The project uses a microservices architecture, isolated within a private Docker network.
 
 ```mermaid
 graph TD
-    User([Пользователь]) -->|HTTP| OR_Dash[OmniRoute Dashboard :20128]
+    User([User]) -->|HTTP| OR_Dash[OmniRoute Dashboard :20128]
     User -->|API Requests| OC_Gate[OpenClaw Gateway :18789]
     
     subgraph Docker Network
@@ -106,71 +119,106 @@ graph TD
 
 ---
 
-## 📍 Сервисы
+## 📍 Services
 
-После запуска вам будут доступны следующие адреса:
+After startup, the following endpoints will be available:
 
-| Сервис | Адрес | Логин / Пароль (по умолчанию) |
+| Service | Address | Credentials |
 | :--- | :--- | :--- |
-| **OmniRoute Dashboard** | [http://localhost:20128](http://localhost:20128) | `admin` / `admin` |
-| **OpenClaw Gateway** | [http://localhost:18789](http://localhost:18789) | Токен: `admin` |
-| **Redis** | `redis://localhost:6379` | (Внутренний доступ) |
+| **OmniRoute Dashboard** | [http://localhost:20128](http://localhost:20128) | Auto-generated during installation |
+| **OpenClaw Gateway** | [http://localhost:18789](http://localhost:18789) | Token auto-generated |
+| **Redis** | `redis://localhost:6379` | (Internal access) |
 
-> [!WARNING]
-> Сразу после первого входа обязательно смените стандартные пароли в панели управления OmniRoute!
-
----
-
-## 🛠 Особенности
-
-- **🔐 Автоматическая безопасность**: Скрипт `update.sh` сам генерирует уникальные ключи шифрования при первом запуске.
-- **🚀 Высокая производительность**: Интеграция с Redis обеспечивает мгновенное кэширование сессий и ответов.
-- **📊 Умные логи**: Автоматическая ротация логов (макс. 10МБ на файл) защищает ваш диск от переполнения.
-- **🔄 Легкое обновление**: Для обновления обоих проектов до последних версий достаточно снова запустить `./update.sh`.
-- **📂 Миграция данных**: Скрипт автоматически подхватывает данные из старых версий (в `$HOME/.omniroute`), если они существуют.
-- **🏥 Автоматическое восстановление**: Встроенная система мониторинга и автоматического восстановления сервисов.
-- **⚡ Zero-config установка**: Одна команда для полной установки без вопросов.
+> [!IMPORTANT]
+> 🔐 **Enhanced Security!** Starting from version 2.0, unique passwords are automatically generated during installation.
+> Passwords are displayed at the end of installation. Save them in a secure location!
 
 ---
 
-## 🔧 Управление
+## 🛠 Features
 
+- **🔐 Automatic Security**: The `update.sh` script generates unique encryption keys on first run.
+- **🚀 High Performance**: Redis integration provides instant caching of sessions and responses.
+- **📊 Smart Logs**: Automatic log rotation (max 10MB per file) protects your disk from overflow.
+- **🔄 Easy Updates**: To update both projects to the latest versions, simply run `./update.sh` again.
+- **📂 Data Migration**: The script automatically picks up data from old versions (in `$HOME/.omniroute`), if they exist.
+- **🏥 Automatic Recovery**: Built-in monitoring and automatic service recovery system.
+- **⚡ Zero-config Installation**: One command for complete installation without questions.
+
+---
+
+## 🔧 Management
+
+### Basic Commands
 ```bash
-# Перезапуск всех сервисов
+# Restart all services
 ./restart.sh
 
-# Проверка здоровья и автоматическое восстановление
+# Health check and automatic recovery
 ./healthcheck.sh
 
-# Мониторинг статуса
+# Status monitoring
 ./monitor.sh
 
-# Просмотр логов
+# View logs
 ./logs.sh
 
-# Полное обновление
+# Full update
 ./update.sh --yes
+```
+
+### Security (NEW! 🔐)
+```bash
+# Rotate all secrets
+./rotate-secrets.sh
+
+# Rotate passwords only
+./rotate-secrets.sh --passwords
+
+# Rotate encryption keys only
+./rotate-secrets.sh --keys
+```
+
+### Backup
+```bash
+# Create backup
+./backup.sh
+
+# Restore from backup
+./restore.sh
+```
+
+### Testing
+```bash
+# Local installation testing
+./test-install.sh
+
+# Testing with verbose output
+./test-install.sh --verbose
+
+# Testing without cleanup
+./test-install.sh --keep
 ```
 
 ---
 
-## ⚙️ Конфигурация
+## ⚙️ Configuration
 
-Все настройки хранятся в файле `.env`. Основные переменные:
+All settings are stored in the `.env` file. Main variables:
 
-- `STORAGE_ENCRYPTION_KEY`: Ключ для шифрования данных в базе.
-- `JWT_SECRET`: Секрет для авторизации пользователей.
-- `OPENCLAW_PASSWORD`: Пароль для доступа к шлюзу OpenClaw.
-- `INITIAL_PASSWORD`: Пароль администратора OmniRoute при первом запуске.
+- `STORAGE_ENCRYPTION_KEY`: Key for encrypting data in the database.
+- `JWT_SECRET`: Secret for user authorization.
+- `OPENCLAW_PASSWORD`: Password for accessing the OpenClaw gateway.
+- `INITIAL_PASSWORD`: OmniRoute administrator password on first startup.
 
 ---
 
-## 📄 Лицензия
+## 📄 License
 
-Этот проект распространяется под лицензией **MIT**. Подробности в файле [LICENSE](LICENSE).
+This project is distributed under the **MIT** license. See the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
-Создано с ❤️ для сообщества AI разработчиков.
+Created with ❤️ for the AI developer community.
 </div>

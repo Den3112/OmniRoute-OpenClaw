@@ -1,30 +1,30 @@
-# Участие в разработке (Contributing)
+# Contributing
 
-Мы приветствуем ваш вклад в развитие проекта OmniRoute-OpenClaw! Чтобы процесс был продуктивным для всех, пожалуйста, придерживайтесь следующих рекомендаций.
+We welcome your contributions to the OmniRoute-OpenClaw project! To make the process productive for everyone, please follow these guidelines.
 
-## Как можно помочь?
+## How Can You Help?
 
-1.  **Сообщения об ошибках**: Если вы нашли баг, создайте [Issue](https://github.com/Den3112/OmniRoute-OpenClaw/issues) с подробным описанием того, как его воспроизвести.
-2.  **Предложения функций**: У вас есть идея, как сделать проект лучше? Напишите об этом в Issues.
-3.  **Pull Requests**: Мы всегда рады новым PR. Пожалуйста, следуйте правилам оформления кода.
+1.  **Bug Reports**: If you found a bug, create an [Issue](https://github.com/Den3112/OmniRoute-OpenClaw/issues) with a detailed description of how to reproduce it.
+2.  **Feature Suggestions**: Have an idea to make the project better? Write about it in Issues.
+3.  **Pull Requests**: We always welcome new PRs. Please follow the code formatting rules.
 
-## Процесс создания Pull Request
+## Pull Request Process
 
-1.  Сделайте Fork репозитория.
-2.  Создайте ветку для вашей функции или исправления (`git checkout -b feature/amazing-feature`).
-3.  Зафиксируйте изменения (`git commit -m 'Add some amazing feature'`).
-4.  Отправьте изменения в свою ветку (`git push origin feature/amazing-feature`).
-5.  Откройте Pull Request в основной ветке этого репозитория.
+1.  Fork the repository.
+2.  Create a branch for your feature or fix (`git checkout -b feature/amazing-feature`).
+3.  Commit your changes (`git commit -m 'Add some amazing feature'`).
+4.  Push changes to your branch (`git push origin feature/amazing-feature`).
+5.  Open a Pull Request to the main branch of this repository.
 
-## Работа с субмодулями
+## Working with Submodules
 
-Поскольку этот проект использует Git Submodules, помните:
-- Изменения, специфичные для OmniRoute или OpenClaw, должны отправляться в соответствующие репозитории.
-- В этом репозитории мы правим только скрипты установки, `docker-compose` и документацию.
+Since this project uses Git Submodules, remember:
+- Changes specific to OmniRoute or OpenClaw should be submitted to their respective repositories.
+- In this repository, we only modify installation scripts, `docker-compose`, and documentation.
 
-## Кодекс поведения
+## Code of Conduct
 
-Участвуя в этом проекте, вы соглашаетесь соблюдать общепринятые нормы вежливого общения. Мы ценим уважительное отношение ко всем участникам сообщества.
+By participating in this project, you agree to follow generally accepted standards of polite communication. We value respectful treatment of all community members.
 
 ---
-Благодарим за помощь в развитии проекта!
+Thank you for helping to develop the project!

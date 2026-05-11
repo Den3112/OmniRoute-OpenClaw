@@ -44,6 +44,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.pre-optimization-backup
 
 # Docker
 .docker
@@ -64,3 +65,6 @@ OmniRoute/node_modules/
 data/
 backups/
 *.tar.gz
+
+# Scratch and temporary files
+scratch/
