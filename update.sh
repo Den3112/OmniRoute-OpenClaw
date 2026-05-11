@@ -28,10 +28,14 @@ START_TIME=$(date +%s)
 
 # Argument parsing
 INTERACTIVE=false
+AUTO_YES=false
 for arg in "$@"; do
     case $arg in
         --interactive|-i)
             INTERACTIVE=true
+            ;;
+        --yes|-y)
+            AUTO_YES=true
             ;;
         --check-updates)
             CHECK_UPDATES=true
@@ -40,6 +44,7 @@ for arg in "$@"; do
             echo "Usage: ./update.sh [options]"
             echo "Options:"
             echo "  --interactive, -i  Enable interactive configuration"
+            echo "  --yes, -y          Auto-confirm all prompts (fully automatic)"
             echo "  --check-updates    Check for new versions on GitHub"
             echo "  --help, -h         Show this help message"
             exit 0
@@ -131,10 +136,14 @@ MAJOR_VERSION=$(echo "$COMPOSE_VERSION" | cut -d. -f1)
 if [ "$MAJOR_VERSION" -lt 2 ]; then
     print_warning "Docker Compose v1.x detected"
     echo "   Some features may not work. Upgrade to v2.x recommended."
-    read -p "   Continue anyway? (y/N): " -r
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Installation cancelled."
-        exit 1
+    if [ "$AUTO_YES" = false ]; then
+        read -p "   Continue anyway? (y/N): " -r
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Installation cancelled."
+            exit 1
+        fi
+    else
+        print_info "Auto-continuing with v1.x..."
     fi
 fi
 
@@ -189,10 +198,14 @@ if command -v df >/dev/null 2>&1; then
         print_warning "Low disk space: ${AVAILABLE_GB}GB available"
         echo "   Required: ${REQUIRED_GB}GB"
         echo "   Docker images and data will require significant space."
-        read -p "   Continue anyway? (y/N): " -r
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Installation cancelled."
-            exit 1
+        if [ "$AUTO_YES" = false ]; then
+            read -p "   Continue anyway? (y/N): " -r
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "Installation cancelled."
+                exit 1
+            fi
+        else
+            print_info "Auto-continuing with low disk space..."
         fi
     else
         print_success "Disk space: ${AVAILABLE_GB}GB available"
@@ -255,11 +268,15 @@ fi
 
 if [ $PORT_WARNINGS -gt 0 ]; then
     echo ""
-    read -p "   Continue with port conflicts? (y/N): " -r
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Installation cancelled."
-        echo "Please stop services using these ports or change ports in configuration."
-        exit 1
+    if [ "$AUTO_YES" = false ]; then
+        read -p "   Continue with port conflicts? (y/N): " -r
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Installation cancelled."
+            echo "Please stop services using these ports or change ports in configuration."
+            exit 1
+        fi
+    else
+        print_info "Auto-continuing with port conflicts..."
     fi
 fi
 

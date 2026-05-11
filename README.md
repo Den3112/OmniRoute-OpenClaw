@@ -48,21 +48,38 @@
 
 ## 🚀 Quick Start / Быстрый старт
 
+### ⚡ One-Command Installation (Recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Den3112/OmniRoute-OpenClaw/main/install.sh | bash
+```
+
+**That's it!** The script will automatically:
+- Clone the repository with all submodules
+- Generate secure encryption keys
+- Build and start all Docker containers
+- Verify all services are healthy
+
+### 📦 Manual Installation
+
 ```bash
 # 1. Clone with submodules / Клонируйте с подмодулями
 git clone --recursive https://github.com/Den3112/OmniRoute-OpenClaw.git
 cd OmniRoute-OpenClaw
 
-# 2. Run installer / Запустите установку
-chmod +x update.sh
+# 2. Run automatic installer / Запустите автоматическую установку
+./update.sh --yes
+
+# Or interactive mode / Или интерактивный режим
 ./update.sh
 ```
 
 **What the script does / Что делает скрипт:**
-- Initializes and updates all submodules.
-- Creates `.env` from example and generates secure keys.
-- Configures permissions and starts Docker containers.
-- Performs health checks on all services.
+- Initializes and updates all submodules
+- Creates `.env` from example and generates secure keys
+- Configures permissions and starts Docker containers
+- Performs health checks on all services
+- Auto-recovers from common issues
 
 ---
 
@@ -111,6 +128,29 @@ graph TD
 - **📊 Умные логи**: Автоматическая ротация логов (макс. 10МБ на файл) защищает ваш диск от переполнения.
 - **🔄 Легкое обновление**: Для обновления обоих проектов до последних версий достаточно снова запустить `./update.sh`.
 - **📂 Миграция данных**: Скрипт автоматически подхватывает данные из старых версий (в `$HOME/.omniroute`), если они существуют.
+- **🏥 Автоматическое восстановление**: Встроенная система мониторинга и автоматического восстановления сервисов.
+- **⚡ Zero-config установка**: Одна команда для полной установки без вопросов.
+
+---
+
+## 🔧 Управление
+
+```bash
+# Перезапуск всех сервисов
+./restart.sh
+
+# Проверка здоровья и автоматическое восстановление
+./healthcheck.sh
+
+# Мониторинг статуса
+./monitor.sh
+
+# Просмотр логов
+./logs.sh
+
+# Полное обновление
+./update.sh --yes
+```
 
 ---
 
