@@ -29,7 +29,24 @@ docker exec omniroute-redis redis-cli INFO stats 2>/dev/null | grep -E "total_co
 echo ""
 
 echo "--- Использование диска ---"
-df -h | grep -E "Filesystem|/home/creator/PROJECTS/free-ai-aggregator"
+DISK_USAGE=$(df -h . | tail -1 | awk '{print $5}' | sed 's/%//')
+DISK_PATH=$(df -h . | tail -1 | awk '{print $6}')
+DISK_AVAIL=$(df -h . | tail -1 | awk '{print $4}')
+
+echo "Путь: $DISK_PATH"
+echo "Использование: ${DISK_USAGE}%"
+echo "Доступно: $DISK_AVAIL"
+
+if [ "$DISK_USAGE" -gt 90 ]; then
+    echo "⚠️  КРИТИЧНО: Диск заполнен более чем на 90%!"
+    echo "   Рекомендуется очистить логи и старые образы:"
+    echo "   docker system prune -a --volumes"
+elif [ "$DISK_USAGE" -gt 80 ]; then
+    echo "⚠️  ВНИМАНИЕ: Диск заполнен более чем на 80%"
+    echo "   Рекомендуется мониторить использование диска"
+else
+    echo "✓ Использование диска в норме"
+fi
 echo ""
 
 echo "--- Логи (последние ошибки) ---"

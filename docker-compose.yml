@@ -119,7 +119,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: omniroute-redis
-    command: redis-server --save "" --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --tcp-keepalive 300 --timeout 0 --tcp-backlog 511 --io-threads 4 --io-threads-do-reads yes --lazyfree-lazy-eviction yes --lazyfree-lazy-expire yes
+    # Redis persistence: AOF with fsync every second (balance between performance and durability)
+    # Stores: OmniRoute sessions, rate limits, semantic cache
+    command: redis-server --save "" --appendonly yes --appendfsync everysec --maxmemory 512mb --maxmemory-policy allkeys-lru --tcp-keepalive 300 --timeout 0 --tcp-backlog 511 --io-threads 4 --io-threads-do-reads yes --lazyfree-lazy-eviction yes --lazyfree-lazy-expire yes
     volumes:
       - redis_data:/data
     networks:
@@ -128,7 +130,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 640M  # 512M data + 128M overhead
           cpus: '1.0'
         reservations:
           cpus: '0.25'
@@ -141,8 +143,9 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
 networks:
   ai_network:

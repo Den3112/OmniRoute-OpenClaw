@@ -131,11 +131,31 @@ else
 fi
 print_success "Docker Compose: $COMPOSE_VERSION"
 
-# Warn if v1.x
-MAJOR_VERSION=$(echo "$COMPOSE_VERSION" | cut -d. -f1)
-if [ "$MAJOR_VERSION" -lt 2 ]; then
-    print_warning "Docker Compose v1.x detected"
-    echo "   Some features may not work. Upgrade to v2.x recommended."
+# Check minimum version
+COMPOSE_VERSION_FULL=$(echo "$COMPOSE_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+if [ -z "$COMPOSE_VERSION_FULL" ]; then
+    COMPOSE_VERSION_FULL="$COMPOSE_VERSION"
+fi
+
+MAJOR=$(echo "$COMPOSE_VERSION_FULL" | cut -d. -f1)
+MINOR=$(echo "$COMPOSE_VERSION_FULL" | cut -d. -f2 2>/dev/null || echo "0")
+
+MIN_MAJOR=1
+MIN_MINOR=27
+
+# Check if version is too old
+if [ "$MAJOR" -lt "$MIN_MAJOR" ] || ([ "$MAJOR" -eq "$MIN_MAJOR" ] && [ "$MINOR" -lt "$MIN_MINOR" ]); then
+    print_error "Docker Compose version $COMPOSE_VERSION_FULL is too old"
+    echo "   Minimum required: ${MIN_MAJOR}.${MIN_MINOR}.0"
+    echo "   Current version: $COMPOSE_VERSION_FULL"
+    echo "   Upgrade: https://docs.docker.com/compose/install/"
+    exit 1
+fi
+
+# Warn if v1.x but acceptable version
+if [ "$MAJOR" -lt 2 ]; then
+    print_warning "Docker Compose v1.x detected ($COMPOSE_VERSION_FULL)"
+    echo "   Version is acceptable but v2.x is recommended."
     if [ "$AUTO_YES" = false ]; then
         read -p "   Continue anyway? (y/N): " -r
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -146,6 +166,8 @@ if [ "$MAJOR_VERSION" -lt 2 ]; then
         print_info "Auto-continuing with v1.x..."
     fi
 fi
+
+print_success "Docker Compose: $COMPOSE_VERSION_FULL (>= ${MIN_MAJOR}.${MIN_MINOR}.0)"
 
 # Detect platform
 PLATFORM=$(uname -s)
@@ -217,12 +239,23 @@ print_step "Checking ports..."
 
 check_port() {
     local port=$1
+    local tool_found=false
+    
     if command -v lsof >/dev/null 2>&1; then
+        tool_found=true
         lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 && return 1
     elif command -v netstat >/dev/null 2>&1; then
+        tool_found=true
         netstat -tuln 2>/dev/null | grep -q ":$port " && return 1
     elif command -v ss >/dev/null 2>&1; then
+        tool_found=true
         ss -tuln 2>/dev/null | grep -q ":$port " && return 1
+    fi
+    
+    if [ "$tool_found" = false ]; then
+        print_warning "No port checking tool found (lsof/netstat/ss)"
+        echo "   Cannot verify if port $port is available"
+        echo "   Installation may fail if port is in use"
     fi
     return 0
 }
@@ -367,6 +400,36 @@ else
     fi
 fi
 
+# Verify submodules integrity
+print_step "Verifying submodules integrity..."
+
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    SUBMODULE_STATUS=$(git submodule status 2>/dev/null || echo "")
+    
+    if echo "$SUBMODULE_STATUS" | grep -q "^-"; then
+        print_warning "Some submodules not initialized"
+        git submodule update --init --recursive
+    fi
+    
+    if echo "$SUBMODULE_STATUS" | grep -q "^+"; then
+        print_warning "Submodules have uncommitted changes"
+        echo "$SUBMODULE_STATUS"
+        if [ "$AUTO_YES" = false ]; then
+            read -p "   Continue anyway? (y/N): " -r
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "Installation cancelled."
+                exit 1
+            fi
+        else
+            print_info "Auto-continuing with modified submodules..."
+        fi
+    fi
+    
+    print_success "Submodules verified"
+else
+    print_info "Not a git repository, skipping submodule verification"
+fi
+
 # ============================================================================
 # 3. ENVIRONMENT & SECRET GENERATION
 # ============================================================================
@@ -474,6 +537,19 @@ print_success "Environment configured"
 
 print_step "Building and starting containers..."
 print_info "This may take 10-20 minutes on first run..."
+
+# Check external resources availability
+print_step "Checking external resources..."
+
+if command -v curl >/dev/null 2>&1; then
+    if ! curl -s --max-time 5 https://ghcr.io >/dev/null 2>&1; then
+        print_warning "GitHub Container Registry (ghcr.io) is not accessible"
+        echo "   Pre-built images will not be available"
+        echo "   Building from source (this will take longer)"
+    else
+        print_success "GitHub Container Registry accessible"
+    fi
+fi
 
 # Try to pull pre-built images first (if available)
 if $DOCKER_COMPOSE pull 2>/dev/null; then
