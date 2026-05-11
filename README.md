@@ -18,43 +18,51 @@
 
 ---
 
-## 📖 О проекте
-
-Этот репозиторий объединяет два мощных инструмента в одну бесшовную экосистему:
-
-1.  **OmniRoute**: Универсальный агрегатор API для LLM. Позволяет управлять ключами, пользователями и группами, предоставляя единый эндпоинт для доступа к десяткам моделей (OpenAI, Anthropic, Gemini, Local LLMs).
-2.  **OpenClaw**: Продвинутый шлюз для "агентного" AI. Он служит мостом между вашими приложениями и LLM, добавляя слой безопасности, кэширования и специфических функций для работы агентов.
-
-**Зачем это нужно?** Вместо того чтобы настраивать каждый проект по отдельности, вы получаете готовую инфраструктуру с автоматической генерацией секретов, настроенным Redis для кэширования и единой точкой управления.
+## 📖 Documentation
+- [📥 **Installation Guide** (EN)](INSTALL.md)
+- [🇷🇺 **Руководство по установке** (RU)](docs/ru/INSTALL.md)
+- [🛠 **Troubleshooting**](TROUBLESHOOTING.md)
+- [🏗 **Architecture**](ARCHITECTURE.md)
 
 ---
 
-## 🚀 Быстрый старт
+## ✨ Features
+- **Unified API Gateway**: Single endpoint for all your AI models (Anthropic, OpenAI, Gemini, etc.).
+- **Advanced Load Balancing**: Intelligent routing between multiple providers.
+- **Token & Key Management**: Securely manage and rotate your API keys.
+- **Real-time Monitoring**: Integrated health checks and performance tracking.
+- **Easy Deployment**: Docker-based setup with a one-click installer.
+- **Privacy First**: All configurations and logs stay on your server.
 
-### Предварительные требования
-- **Docker** и **Docker Compose**
-- **Git**
+---
 
-### Установка в один клик
+## 💻 System Requirements
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 2 Cores | 4+ Cores |
+| RAM | 4 GB | 8 GB+ |
+| Disk | 10 GB | 20 GB+ (SSD) |
+| OS | Linux / macOS / WSL2 | Ubuntu 22.04+ |
 
-1.  **Клонируйте репозиторий** (обязательно с вложенными модулями):
-    ```bash
-    git clone --recursive https://github.com/Den3112/OmniRoute-OpenClaw.git
-    cd OmniRoute-OpenClaw
-    ```
+---
 
-2.  **Запустите скрипт установки**:
-    ```bash
-    chmod +x update.sh
-    ./update.sh
-    ```
+## 🚀 Quick Start / Быстрый старт
 
-**Что сделает скрипт?**
-- Инициализирует и обновит все субмодули.
-- Создаст файл `.env` на основе примера.
-- Сгенерирует надежные случайные ключи (`JWT_SECRET`, `API_KEY_SECRET` и др.).
-- Настроит права доступа и запустит контейнеры в Docker.
-- Проверит состояние здоровья всех сервисов.
+```bash
+# 1. Clone with submodules / Клонируйте с подмодулями
+git clone --recursive https://github.com/Den3112/OmniRoute-OpenClaw.git
+cd OmniRoute-OpenClaw
+
+# 2. Run installer / Запустите установку
+chmod +x update.sh
+./update.sh
+```
+
+**What the script does / Что делает скрипт:**
+- Initializes and updates all submodules.
+- Creates `.env` from example and generates secure keys.
+- Configures permissions and starts Docker containers.
+- Performs health checks on all services.
 
 ---
 

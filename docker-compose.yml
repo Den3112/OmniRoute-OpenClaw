@@ -1,15 +1,17 @@
 services:
   omniroute:
+    image: ghcr.io/${DOCKER_ORG:-den3112}/omniroute:latest
     build:
       context: ./OmniRoute
       target: runner-cli
       cache_from:
         - type=local,src=/tmp/docker-cache/omniroute
+        - type=registry,ref=ghcr.io/${DOCKER_ORG:-den3112}/omniroute:latest
       cache_to:
         - type=local,dest=/tmp/docker-cache/omniroute,mode=max
     container_name: omniroute
     ports:
-      - "20128:20128"
+      - "${PORT:-20128}:20128"
     volumes:
       - ./data/omniroute:/app/data
     environment:
@@ -26,6 +28,7 @@ services:
       - OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK=${OMNIROUTE_DISABLE_TOKEN_HEALTHCHECK:-false}
       - OMNIROUTE_HIDE_HEALTHCHECK_LOGS=${OMNIROUTE_HIDE_HEALTHCHECK_LOGS:-false}
       - APP_LOG_TO_FILE=true
+      - SEMANTIC_CACHE_DEFAULT_TEMPERATURE=${SEMANTIC_CACHE_DEFAULT_TEMPERATURE:-true}
       - NODE_OPTIONS=--max-old-space-size=1536 --max-semi-space-size=64
       - UV_THREADPOOL_SIZE=16
     networks:
@@ -57,6 +60,7 @@ services:
         condition: service_healthy
 
   openclaw:
+    image: ghcr.io/${DOCKER_ORG:-den3112}/openclaw:latest
     build:
       context: ./openclaw
       args:
@@ -64,11 +68,12 @@ services:
         - OPENCLAW_INSTALL_BROWSER=0
       cache_from:
         - type=local,src=/tmp/docker-cache/openclaw
+        - type=registry,ref=ghcr.io/${DOCKER_ORG:-den3112}/openclaw:latest
       cache_to:
         - type=local,dest=/tmp/docker-cache/openclaw,mode=max
     container_name: openclaw
     ports:
-      - "18789:18789"
+      - "${OPENCLAW_PORT:-18789}:18789"
     volumes:
       - ./data/openclaw:/home/node/.openclaw
       - /var/run/docker.sock:/var/run/docker.sock

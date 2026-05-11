@@ -2,12 +2,12 @@
 # Quick restart of services
 
 if [ -z "$1" ]; then
-    echo "🔄 Restarting all services..."
-    docker compose restart
-    echo "✅ All services restarted"
+    echo "🔄 Applying configuration and starting services..."
+    docker compose up -d --remove-orphans
+    echo "✅ All services are up to date and running"
 else
     echo "🔄 Restarting $1..."
-    docker compose restart "$1"
+    docker compose up -d "$1"
     echo "✅ $1 restarted"
 fi
 

@@ -2,24 +2,33 @@
   "mcpServers": {
     "Sequential Thinking": {
       "type": "stdio",
-      "command": "npx",
+      "command": "wsl",
       "args": [
+        "-d",
+        "Ubuntu-22.04",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
     "Memory": {
       "type": "stdio",
-      "command": "npx",
+      "command": "wsl",
       "args": [
+        "-d",
+        "Ubuntu-22.04",
+        "npx",
         "-y",
         "@modelcontextprotocol/server-memory"
       ]
     },
     "Context7": {
       "type": "stdio",
-      "command": "npx",
+      "command": "wsl",
       "args": [
+        "-d",
+        "Ubuntu-22.04",
+        "npx",
         "-y",
         "@upstash/context7-mcp"
       ],

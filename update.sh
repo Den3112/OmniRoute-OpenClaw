@@ -26,6 +26,27 @@ print_step() { echo ""; echo -e "${BLUE}==>${NC} $1"; }
 # Start timer
 START_TIME=$(date +%s)
 
+# Argument parsing
+INTERACTIVE=false
+for arg in "$@"; do
+    case $arg in
+        --interactive|-i)
+            INTERACTIVE=true
+            ;;
+        --check-updates)
+            CHECK_UPDATES=true
+            ;;
+        --help|-h)
+            echo "Usage: ./update.sh [options]"
+            echo "Options:"
+            echo "  --interactive, -i  Enable interactive configuration"
+            echo "  --check-updates    Check for new versions on GitHub"
+            echo "  --help, -h         Show this help message"
+            exit 0
+            ;;
+    esac
+done
+
 cleanup() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
@@ -42,8 +63,36 @@ echo "🚀 Starting OmniRoute-OpenClaw Setup..."
 echo ""
 
 # ============================================================================
-# 0. PRE-FLIGHT CHECKS
+# 0. PRE-FLIGHT CHECKS & UPDATES
 # ============================================================================
+
+if [ "$CHECK_UPDATES" = true ]; then
+    print_step "Checking for updates..."
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        print_error "Not a git repository. Cannot check for updates."
+        exit 1
+    fi
+    
+    git fetch origin >/dev/null 2>&1 || print_warning "Failed to fetch from remote"
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "$LOCAL")
+    
+    if [ "$LOCAL" = "$REMOTE" ]; then
+        print_success "You are running the latest version"
+    else
+        print_warning "A new version is available on GitHub!"
+        read -p "   Update to latest version? (y/N): " -r
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Updating repository..."
+            git pull --rebase && git submodule update --init --recursive
+            print_success "Updated successfully. Restarting script..."
+            exec "$0" "${@/--check-updates/}"
+        fi
+    fi
+    # If we only wanted to check, we can exit here or continue.
+    # The plan says "exit 0" for check-updates if not updating.
+    exit 0
+fi
 
 print_step "Checking system requirements..."
 
@@ -166,20 +215,42 @@ check_port() {
 }
 
 PORT_WARNINGS=0
-if ! check_port 20128; then
-    print_warning "Port 20128 is already in use (OmniRoute)"
-    echo "   You can change it in .env (PORT=20128)"
-    PORT_WARNINGS=$((PORT_WARNINGS + 1))
-else
-    print_success "Port 20128 available (OmniRoute)"
+OMNI_PORT=20128
+OPENCLAW_PORT=18789
+
+if [ "$INTERACTIVE" = true ]; then
+    print_step "Interactive Port Configuration"
+    read -p "   Enter OmniRoute port [20128]: " input_port
+    OMNI_PORT=${input_port:-20128}
+    read -p "   Enter OpenClaw port [18789]: " input_port
+    OPENCLAW_PORT=${input_port:-18789}
+    
+    # Update .env if it exists
+    if [ -f .env ]; then
+        if grep -q "^PORT=" .env; then
+            sed -i "s/^PORT=.*/PORT=$OMNI_PORT/" .env
+        else
+            echo "PORT=$OMNI_PORT" >> .env
+        fi
+    fi
+    # Note: OpenClaw port in docker-compose.yml is harder to change via script safely
+    # but we can warn the user.
 fi
 
-if ! check_port 18789; then
-    print_warning "Port 18789 is already in use (OpenClaw)"
-    echo "   You can change it in docker-compose.yml"
+if ! check_port $OMNI_PORT; then
+    print_warning "Port $OMNI_PORT is already in use (OmniRoute)"
+    [ "$OMNI_PORT" = "20128" ] && echo "   You can change it in .env (PORT=$OMNI_PORT)"
     PORT_WARNINGS=$((PORT_WARNINGS + 1))
 else
-    print_success "Port 18789 available (OpenClaw)"
+    print_success "Port $OMNI_PORT available (OmniRoute)"
+fi
+
+if ! check_port $OPENCLAW_PORT; then
+    print_warning "Port $OPENCLAW_PORT is already in use (OpenClaw)"
+    [ "$OPENCLAW_PORT" = "18789" ] && echo "   You can change it in docker-compose.yml"
+    PORT_WARNINGS=$((PORT_WARNINGS + 1))
+else
+    print_success "Port $OPENCLAW_PORT available (OpenClaw)"
 fi
 
 if [ $PORT_WARNINGS -gt 0 ]; then
@@ -326,13 +397,21 @@ generate_secret() {
     local current_val=$(grep "^${var_name}=" .env 2>/dev/null | cut -d'=' -f2 || true)
     
     if [ -z "$current_val" ] || [ "$current_val" == "CHANGEME" ] || [[ "$current_val" == *"replace_this"* ]]; then
-        print_info "Generating secure $var_name..."
+        local new_val=""
         
-        local new_val=$(generate_random_hex)
+        if [ "$INTERACTIVE" = true ]; then
+            read -p "   Enter value for $var_name (leave empty to generate random): " user_val
+            new_val=$user_val
+        fi
+        
         if [ -z "$new_val" ]; then
-            print_error "Failed to generate secure random value for $var_name"
-            echo "   Please install openssl, xxd, od, or hexdump"
-            exit 1
+            print_info "Generating secure $var_name..."
+            new_val=$(generate_random_hex)
+            if [ -z "$new_val" ]; then
+                print_error "Failed to generate secure random value for $var_name"
+                echo "   Please install openssl, xxd, od, or hexdump"
+                exit 1
+            fi
         fi
         
         if grep -q "^${var_name}=" .env 2>/dev/null; then
@@ -342,6 +421,17 @@ generate_secret() {
         fi
     fi
 }
+# SAFETY: Try to restore .env from backup if it exists and main .env is missing
+if [ ! -f .env ] && [ -f "$NEW_DATA_DIR/omniroute/env.bak" ]; then
+    print_step "Found secrets backup in data volume. Restoring..."
+    cp "$NEW_DATA_DIR/omniroute/env.bak" .env
+    print_success "Restored .env from persistent storage"
+fi
+
+# Create .env if still missing
+if [ ! -f .env ]; then
+    touch .env
+fi
 
 generate_secret "STORAGE_ENCRYPTION_KEY"
 generate_secret "JWT_SECRET"
@@ -352,6 +442,12 @@ generate_secret "OPENCLAW_PASSWORD"
 if ! grep -q "^STORAGE_ENCRYPTION_KEY_VERSION=" .env 2>/dev/null; then
     echo "STORAGE_ENCRYPTION_KEY_VERSION=v1" >> .env
 fi
+
+# SAFETY: Backup .env to data directory to prevent key loss
+print_step "Persisting secrets for recovery..."
+mkdir -p "$NEW_DATA_DIR/omniroute"
+cp .env "$NEW_DATA_DIR/omniroute/env.bak"
+print_success "Secrets backed up to $NEW_DATA_DIR/omniroute/env.bak"
 
 print_success "Environment configured"
 

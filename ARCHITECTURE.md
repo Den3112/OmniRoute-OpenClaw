@@ -46,8 +46,79 @@
 - `/docs`: Изображения и дополнительные материалы документации.
 - `update.sh`: Основной скрипт управления жизненным циклом.
 
+## Memory Management и Skills System
+
+### Memory Management (Управление памятью)
+
+**Статус**: ✅ Настроено и работает
+
+OmniRoute включает систему персистентной памяти для AI-агентов:
+
+- **Хранилище**: SQLite таблица `memories` с FTS5 индексом для полнотекстового поиска
+- **Типы памяти**: factual, episodic, procedural, semantic
+- **Стратегии поиска**: exact (хронологический), semantic (FTS5), hybrid (комбинированный)
+- **Автоматическое извлечение**: Факты извлекаются из ответов LLM автоматически
+- **Инъекция**: Память внедряется в системные сообщения перед отправкой к провайдеру
+- **Конфигурация**: 2000 токенов, 30 дней хранения, hybrid стратегия
+
+**Файлы**:
+- `OmniRoute/src/lib/memory/` - Основная реализация
+- `OmniRoute/src/lib/db/migrations/015_create_memories.sql` - Схема БД
+- `OmniRoute/src/lib/db/migrations/022_add_memory_fts5.sql` - FTS5 индекс
+
+### Skills System (Система навыков)
+
+**Статус**: ✅ Настроено и работает
+
+Расширяемая система навыков для AI-агентов:
+
+- **Встроенные навыки**: file_read, file_write, http_request, web_search, eval_code, execute_command
+- **Источники**: SkillsMP (маркетплейс), Skills.sh (публичный каталог), Local (пользовательские)
+- **Режимы**: on (всегда), off (отключен), auto (автоматический выбор на основе контекста)
+- **Sandbox**: Docker-изоляция с лимитами ресурсов (256MB RAM, 10s timeout)
+- **Установлено**: 5 навыков (web-search, file-reader, sql-assistant, devops-helper, docs-assistant)
+
+**Файлы**:
+- `OmniRoute/src/lib/skills/` - Основная реализация
+- `OmniRoute/src/lib/db/migrations/016_create_skills.sql` - Схема БД
+- `OmniRoute/src/lib/db/migrations/027_skill_mode_and_metadata.sql` - Метаданные
+
+### MCP Server Integration
+
+**Статус**: ✅ Настроено и работает
+
+Model Context Protocol сервер с 37 инструментами, включая:
+
+**Memory инструменты** (3):
+- `omniroute_memory_search` - Поиск воспоминаний
+- `omniroute_memory_add` - Добавить воспоминание
+- `omniroute_memory_clear` - Очистить память
+
+**Skills инструменты** (4):
+- `omniroute_skills_list` - Список навыков
+- `omniroute_skills_enable` - Включить/выключить навык
+- `omniroute_skills_execute` - Выполнить навык
+- `omniroute_skills_executions` - История выполнения
+
+**Транспорты**: stdio, SSE, HTTP
+
+**Файлы**:
+- `OmniRoute/open-sse/mcp-server/` - MCP сервер
+- `OmniRoute/open-sse/mcp-server/tools/memoryTools.ts` - Memory инструменты
+- `OmniRoute/open-sse/mcp-server/tools/skillTools.ts` - Skills инструменты
+
+### Документация Memory & Skills
+
+- **README_MEMORY_SKILLS.md** - Главная страница с результатами настройки
+- **MEMORY_SKILLS_CONFIG.md** - Полная техническая документация (500+ строк)
+- **QUICKSTART_MEMORY_SKILLS.md** - Быстрый старт с примерами (400+ строк)
+- **MEMORY_SKILLS_SUMMARY.md** - Детальная сводка проекта (600+ строк)
+- **test_memory_skills.sh** - Автоматическое тестирование
+
 ## Безопасность
 
 - **Секреты**: Все чувствительные ключи генерируются автоматически с использованием `/dev/urandom` или OpenSSL при первом запуске.
 - **Изоляция**: Контейнеры работают с минимально необходимыми правами.
 - **Логи**: Настроена автоматическая ротация логов Docker для предотвращения атак типа "отказ в обслуживании" через переполнение диска.
+- **Skills Sandbox**: Навыки выполняются в изолированных Docker контейнерах с лимитами ресурсов.
+- **Memory Isolation**: Воспоминания изолированы по API ключам, каждый клиент видит только свои данные.
