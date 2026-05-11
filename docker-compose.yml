@@ -13,7 +13,7 @@ services:
     ports:
       - "${PORT:-20128}:20128"
     volumes:
-      - ./data/omniroute:/app/data
+      - ${OMNIROUTE_DATA_DIR:-./data/omniroute}:/app/data
     environment:
       - NODE_ENV=production
       - PORT=20128
@@ -75,7 +75,7 @@ services:
     ports:
       - "${OPENCLAW_PORT:-18789}:18789"
     volumes:
-      - ./data/openclaw:/home/node/.openclaw
+      - ${OPENCLAW_DATA_DIR:-./data/openclaw}:/home/node/.openclaw
       - /var/run/docker.sock:/var/run/docker.sock
     command: ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--auth", "token", "--token", "${OPENCLAW_PASSWORD:-admin}", "--bind", "lan"]
     environment:

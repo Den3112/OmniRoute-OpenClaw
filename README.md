@@ -100,6 +100,34 @@ cd OmniRoute-OpenClaw
 
 The project uses a microservices architecture, isolated within a private Docker network.
 
+### 📁 Project Structure
+
+```
+free-ai-aggregator/
+├── data/                      # Persistent data (gitignored)
+│   ├── openclaw/             # OpenClaw state and workspace
+│   │   ├── workspace/        # Agent workspace
+│   │   ├── agents/           # Agent configurations
+│   │   └── openclaw.json     # Main config
+│   └── omniroute/            # OmniRoute data
+│       ├── db/               # SQLite database
+│       └── logs/             # Application logs
+├── openclaw/                 # OpenClaw source (submodule)
+├── OmniRoute/                # OmniRoute source (submodule)
+├── scripts/                  # Utility scripts
+│   └── check-paths.sh        # Validate project structure
+├── monitoring/               # Monitoring stack configs
+├── docker-compose.yml        # Main Docker configuration
+├── .env                      # Environment variables (gitignored)
+├── .env.example              # Environment template
+└── README.md                 # This file
+```
+
+> **Note:** All data is stored in `./data/` directory, making the project fully portable.
+> You can clone this project to any directory and it will work without path modifications.
+
+### 🔄 Service Architecture
+
 ```mermaid
 graph TD
     User([User]) -->|HTTP| OR_Dash[OmniRoute Dashboard :20128]
@@ -165,6 +193,9 @@ After startup, the following endpoints will be available:
 
 # Full update
 ./update.sh --yes
+
+# Validate project structure
+./scripts/check-paths.sh
 ```
 
 ### Security (NEW! 🔐)

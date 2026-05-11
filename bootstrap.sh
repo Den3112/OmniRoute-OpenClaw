@@ -48,7 +48,14 @@ fi
 INSTALL_DIR="${INSTALL_DIR:-$HOME/omniroute-openclaw}"
 REPO_URL="https://github.com/Den3112/OmniRoute-OpenClaw.git"
 
-print_info "Installation directory: $INSTALL_DIR"
+# Detect project root (if running from existing installation)
+if [ -f "$(dirname "$0")/docker-compose.yml" ]; then
+    PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+    print_info "Running from existing installation: $PROJECT_ROOT"
+else
+    PROJECT_ROOT="$INSTALL_DIR"
+    print_info "Installation directory: $INSTALL_DIR"
+fi
 
 # ============================================================================
 # 1. CHECK PREREQUISITES
@@ -106,6 +113,7 @@ print_step "Setting up repository..."
 if [ -d "$INSTALL_DIR" ]; then
     print_info "Directory exists, updating..."
     cd "$INSTALL_DIR"
+    PROJECT_ROOT="$(pwd)"
     
     # Check if it's a git repository
     if [ -d .git ]; then
@@ -120,9 +128,10 @@ else
     print_info "Cloning repository..."
     git clone --recursive "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
+    PROJECT_ROOT="$(pwd)"
 fi
 
-print_success "Repository ready"
+print_success "Repository ready at $PROJECT_ROOT"
 
 # ============================================================================
 # 3. GENERATE SECRETS
@@ -306,10 +315,10 @@ echo "   • OpenClaw:  Check .env file for OPENCLAW_PASSWORD"
 echo ""
 echo "⚠️  IMPORTANT: Change default passwords after first login!"
 echo ""
-echo "📂 Installation directory: $INSTALL_DIR"
+echo "📂 Installation directory: $PROJECT_ROOT"
 echo ""
 echo "🛠  Useful commands:"
-echo "   cd $INSTALL_DIR"
+echo "   cd $PROJECT_ROOT"
 echo "   docker compose logs -f          # View logs"
 echo "   docker compose restart          # Restart services"
 echo "   docker compose down             # Stop services"
