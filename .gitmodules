@@ -1,6 +1,2 @@
-[submodule "OmniRoute"]
-	path = OmniRoute
-	url = https://github.com/diegosouzapw/OmniRoute.git
-[submodule "openclaw"]
-	path = openclaw
-	url = https://github.com/openclaw/openclaw.git
+# Submodules removed - causing CI/CD failures
+# To add them back properly, use: git submodule add <url> <path>
