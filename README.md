@@ -19,9 +19,9 @@
 ---
 
 ## 📖 Documentation
-- [📥 **Installation Guide**](INSTALL.md)
-- [🛠 **Troubleshooting**](TROUBLESHOOTING.md)
-- [🏗 **Architecture**](ARCHITECTURE.md)
+- [📥 **Installation Guide**](docs/INSTALL.md)
+- [🛠 **Troubleshooting**](docs/TROUBLESHOOTING.md)
+- [🏗 **Architecture**](docs/ARCHITECTURE.md)
 
 ---
 
@@ -168,7 +168,7 @@ After startup, the following endpoints will be available:
 - **🔐 Automatic Security**: The `update.sh` script generates unique encryption keys on first run.
 - **🚀 High Performance**: Redis integration provides instant caching of sessions and responses.
 - **📊 Smart Logs**: Automatic log rotation (max 10MB per file) protects your disk from overflow.
-- **🔄 Easy Updates**: To update both projects to the latest versions, simply run `./update.sh` again.
+- **🔄 Easy Updates**: To update both projects to the latest versions, simply run `./scripts/maintenance/update.sh` again.
 - **📂 Data Migration**: The script automatically picks up data from old versions (in `$HOME/.omniroute`), if they exist.
 - **🏥 Automatic Recovery**: Built-in monitoring and automatic service recovery system.
 - **⚡ Zero-config Installation**: One command for complete installation without questions.
@@ -177,58 +177,62 @@ After startup, the following endpoints will be available:
 
 ## 🔧 Management
 
-### Basic Commands
+### Basic Operations
+
 ```bash
 # Restart all services
-./restart.sh
+./scripts/operations/restart.sh
 
 # Health check and automatic recovery
-./healthcheck.sh
+./scripts/operations/healthcheck.sh
 
 # Status monitoring
-./monitor.sh
+./scripts/operations/monitor.sh
 
 # View logs
-./logs.sh
+./scripts/operations/logs.sh
 
 # Full update
-./update.sh --yes
+./scripts/maintenance/update.sh --yes
 
 # Validate project structure
 ./scripts/check-paths.sh
 ```
 
 ### Security (NEW! 🔐)
+
 ```bash
 # Rotate all secrets
-./rotate-secrets.sh
+./scripts/security/rotate-secrets.sh
 
 # Rotate passwords only
-./rotate-secrets.sh --passwords
+./scripts/security/rotate-secrets.sh --passwords
 
 # Rotate encryption keys only
-./rotate-secrets.sh --keys
+./scripts/security/rotate-secrets.sh --keys
 ```
 
-### Backup
+### Backup & Restore
+
 ```bash
 # Create backup
-./backup.sh
+./scripts/maintenance/backup.sh
 
 # Restore from backup
-./restore.sh
+./scripts/maintenance/restore.sh
 ```
 
 ### Testing
+
 ```bash
 # Local installation testing
-./test-install.sh
+./scripts/install/test-install.sh
 
 # Testing with verbose output
-./test-install.sh --verbose
+./scripts/install/test-install.sh --verbose
 
 # Testing without cleanup
-./test-install.sh --keep
+./scripts/install/test-install.sh --keep
 ```
 
 ---
