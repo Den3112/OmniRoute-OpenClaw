@@ -6,7 +6,10 @@ set -e
 
 PROJECT_ROOT="/home/creator/PROJECTS/free-ai-aggregator"
 DATA_DIR="${PROJECT_ROOT}/data"
-LOG_FILE="${PROJECT_ROOT}/auto-pilot.log"
+LOG_FILE="${DATA_DIR}/logs/auto-pilot.log"
+
+# Ensure logging directory exists
+mkdir -p "${DATA_DIR}/logs"
 
 # Redirect output to log file
 exec > >(tee -a "$LOG_FILE") 2>&1
