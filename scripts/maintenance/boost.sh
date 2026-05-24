@@ -33,6 +33,6 @@ fi
 
 # 6. Rebuild with parallel support
 echo "🏗️ Rebuilding with parallel execution..."
-docker-compose build --parallel
+docker compose build --parallel
 
 echo "✅ Boost applied! Antigravity should now work faster with Docker."

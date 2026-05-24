@@ -88,3 +88,7 @@ data/cleanup.log
 data/cron.log
 data/docker-cleanup.log
 data/health.log
+
+# Temporary session data
+cookies.txt
+

@@ -9,6 +9,11 @@ echo ""
 # Включаем BuildKit для лучшего кэширования
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
+export BUILDKIT_PROGRESS=plain
+
+# Обеспечиваем наличие директорий кэша
+mkdir -p /tmp/docker-cache/omniroute
+mkdir -p /tmp/docker-cache/openclaw
 
 echo "--- Проверка кэша ---"
 if [ -d "/tmp/docker-cache/omniroute" ]; then
@@ -24,16 +29,16 @@ else
 fi
 echo ""
 
-echo "--- Пересборка контейнеров ---"
+echo "--- Пересборка контейнеров (ПАРАЛЛЕЛЬНО) ---"
 cd /home/creator/PROJECTS/free-ai-aggregator
 
-# Пересборка с использованием кэша
-docker-compose build --progress=plain
+# Пересборка с использованием кэша и параллельным выполнением
+docker compose build --parallel
 
 echo ""
 echo "--- Перезапуск сервисов ---"
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 
 echo ""
 echo "--- Ожидание готовности ---"
@@ -41,8 +46,8 @@ sleep 10
 
 echo ""
 echo "--- Статус ---"
-docker-compose ps
+docker compose ps
 
 echo ""
 echo "=== Готово! ==="
-echo "Используйте './monitor.sh' для проверки состояния"
+echo "Используйте './scripts/operations/status.sh' для проверки состояния"

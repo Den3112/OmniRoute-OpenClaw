@@ -1,40 +1,14 @@
 {
   "mcpServers": {
-    "Sequential Thinking": {
-      "type": "stdio",
-      "command": "wsl",
+    "redis": {
+      "command": "docker",
       "args": [
-        "-d",
-        "Ubuntu-22.04",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "run",
+        "-i",
+        "--rm",
+        "mcp/redis",
+        "rediss://default:AY5lAAIncDExZWM5ZjBiZDc1MTk0ZTZlYjRhNGEwODJmNmVmMTI0YXAxMzY0NTM@flowing-jackal-36453.upstash.io:6379"
       ]
-    },
-    "Memory": {
-      "type": "stdio",
-      "command": "wsl",
-      "args": [
-        "-d",
-        "Ubuntu-22.04",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
-    },
-    "Context7": {
-      "type": "stdio",
-      "command": "wsl",
-      "args": [
-        "-d",
-        "Ubuntu-22.04",
-        "npx",
-        "-y",
-        "@upstash/context7-mcp"
-      ],
-      "env": {
-        "CONTEXT7_API_KEY": ""
-      }
     }
   }
 }
