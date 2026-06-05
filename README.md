@@ -20,4 +20,4 @@ OmniRoute-OpenClaw is a unified orchestration layer and LLM API gateway that ena
 
 ## 🔒 License & Usage
 This repository is private and proprietary.
-All rights reserved. Use, modification, copying, or distribution is **strictly prohibited** without the explicit prior written consent of the owner (Denis Kushnirenko).
+All rights reserved. Use, modification, copying, or distribution is **strictly prohibited** without the explicit prior written consent of the owner (Denis).
